@@ -12,4 +12,6 @@ public interface RoleEntityRepository extends JpaRepository <RoleEntity , UUID> 
 
     @Override
     Optional<RoleEntity> findById(UUID uuid);
+
+
 }
