@@ -18,7 +18,6 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
 
     boolean existsByEmail(String email);
 
-
     @Query("""
         SELECT u
         FROM UserEntity u

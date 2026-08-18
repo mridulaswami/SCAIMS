@@ -29,7 +29,5 @@ public class CreateUserResponseDto {
     private Boolean status;
 
     private LocalDateTime createdAt;
-
-    private String wardAssigned;
 }
 

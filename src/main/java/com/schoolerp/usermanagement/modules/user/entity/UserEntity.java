@@ -50,9 +50,7 @@ public class UserEntity {
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false, updatable = true)
-    private LocalDateTime updatedAts;
-
-     private String wardAssigned;
+    private LocalDateTime updatedAt;
 
 
 }
