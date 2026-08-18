@@ -6,9 +6,9 @@ spring:
     active: dev
 
   flyway:
-    enabled: false
+    enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: false
+    baseline-on-migrate: true
 
   jpa:
     hibernate:
