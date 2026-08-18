@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class GeometryDto {
 
-    public String Type;
-    public Object Coordinates;
+    public String type;
+    public Object coordinates;
 }
