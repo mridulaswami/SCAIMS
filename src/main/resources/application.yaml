@@ -2,20 +2,29 @@ spring:
   application:
     name: USER-MANAGEMENT-SERVICE
 
+  profiles:
+    active: dev
+
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
-    baseline-on-migrate: true
+    baseline-on-migrate: false
 
   jpa:
     hibernate:
       ddl-auto: validate
     show-sql: false
 
+  servlet:
+    multipart:
+      max-file-size: 3MB
+      max-request-size: 3MB
+
 server:
   port: 8003
   servlet:
     context-path: /user-management-service
+
 
 app:
   jwt:
