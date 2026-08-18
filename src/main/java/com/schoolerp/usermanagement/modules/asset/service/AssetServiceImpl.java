@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.asset.service;
 
+import com.schoolerp.usermanagement.modules.Geometry.GeometryService;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
@@ -8,6 +9,7 @@ import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEn
 import com.schoolerp.usermanagement.modules.assetCategory.repository.AssetCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.locationtech.jts.geom.Geometry;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -17,6 +19,7 @@ public class AssetServiceImpl implements AssetService{
 
     private final AssetRepository assetrepo;
     private final AssetCategoryRepository assetCategoryRepo;
+    private final GeometryService geometryConverter;
 
     @Override
     public AssetresponseDto createAsset(AssetrequestDto request) {
@@ -25,8 +28,11 @@ public class AssetServiceImpl implements AssetService{
             AssetCategoryEntity assetCategoryId =
                     assetCategoryRepo.findById(request.getCategoryId())
                             .orElseThrow(() -> new RuntimeException("Asset category not found with id: " + request.getCategoryId()));
+
+            Geometry geometry = geometryConverter.toJtsGeometry(request.getGeometry());
+
             AssetEntity asset = AssetEntity.builder().name(request.getName()).categoryId(assetCategoryId)
-                  //  .geometry(request.getGeometry())
+                    .geometry(geometry)
                     .status(request.getStatus()).condition(request.getCondition()).ward(request.getWard()).build();
 
             AssetEntity savedEntity = assetrepo.save(asset);
