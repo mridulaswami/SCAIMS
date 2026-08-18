@@ -1,0 +1,7 @@
+insert into asset_category (name,icon_key,default_layer_color)
+values ('StreetLight', 'lamp','#FFC107'),
+       ('Road', 'road', '#607D8B'),
+       ('Building', 'building', '#795548'),
+       ('Park', 'tree', '#4CAF50'),
+       ('WaterLine', 'tap', '#2196F3'),
+       ('DrainageLine', 'drain', '#00BCD4');

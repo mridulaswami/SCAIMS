@@ -38,4 +38,6 @@ public class CreateUserRequestDto {
 
     private boolean status;
 
+    private String wardAssigned;
+
 }
