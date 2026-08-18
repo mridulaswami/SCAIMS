@@ -66,12 +66,12 @@ public class AuthServiceImpl implements AuthService {
 
 
             // 3. Check User Status
-//            if (!user.isStatus()) {
-//
-//                log.warn("Login rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
-//
-//                throw new RuntimeException("User account is inactive");
-//            }
+            if (!user.isStatus()) {
+
+                log.warn("Login rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
+
+                throw new RuntimeException("User account is inactive");
+            }
 
 
             // 4. Get Role
@@ -170,12 +170,12 @@ public class AuthServiceImpl implements AuthService {
 
 
             // 5. Check User Status
-//            if (!user.isStatus()) {
-//
-//                log.warn("Refresh rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
-//
-//                throw new RuntimeException("User account is inactive");
-//            }
+            if (!user.isStatus()) {
+
+                log.warn("Refresh rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
+
+                throw new RuntimeException("User account is inactive");
+            }
 
 
             // 6. Get Role

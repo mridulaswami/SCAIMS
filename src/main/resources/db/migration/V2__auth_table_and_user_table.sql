@@ -13,7 +13,6 @@ CREATE TABLE users (
                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-                       ward_assigned varchar(100),
                        CONSTRAINT fk_users_role
                            FOREIGN KEY (role_id)
                                REFERENCES roles (id)
