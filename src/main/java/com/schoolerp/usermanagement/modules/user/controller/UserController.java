@@ -19,14 +19,14 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping(path = "/api/v1/auth/users")
+@RequestMapping(path = "/api/v1/users")
 @Slf4j
 public class UserController {
 
     private final UserService userService;
 
     @PostMapping
-//    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CreateUserResponseDto>> createUser(@Valid @RequestBody CreateUserRequestDto requestDto) {
 
         log.info("Create user API request received | username={} | email={} | roleId={}", requestDto.getUserName(), requestDto.getEmail(), requestDto.getRoleId());
@@ -110,8 +110,7 @@ public class UserController {
                 log.info("No Users data present");
                 throw new Exception("Users Data fetch failed");
             }
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             log.error("Error occurred while fetching users", e.getMessage());
             throw new RuntimeException("Error occurred while fetching users");
         }
@@ -128,8 +127,7 @@ public class UserController {
                 log.info("No data present");
                 throw new Exception("Data fetch failed");
             }
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             log.error("Error occurred while fetching User", e.getMessage());
             throw new RuntimeException("Error occurred while fetching user");
         }
