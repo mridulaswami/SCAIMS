@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.user.requestDto;
 
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,7 +37,8 @@ public class CreateUserRequestDto {
     @NotNull(message = "Role is required")
     private UUID roleId;
 
-    private boolean status;
+    @Builder.Default
+    private boolean status = true;
 
     private String wardAssigned;
 

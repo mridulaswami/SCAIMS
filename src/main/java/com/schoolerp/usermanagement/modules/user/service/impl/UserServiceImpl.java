@@ -1,5 +1,7 @@
 package com.schoolerp.usermanagement.modules.user.service.impl;
 
+import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
+import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
 import com.schoolerp.usermanagement.modules.role.entity.RoleEntity;
 import com.schoolerp.usermanagement.modules.role.repository.RoleEntityRepository;
 import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
@@ -28,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserEntityRepository userRepository;
     private final RoleEntityRepository roleEntityRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserRoleRepository userRoleRepository;
 
     @Override
     @Transactional
@@ -53,15 +56,25 @@ public class UserServiceImpl implements UserService {
             log.debug("User password encrypted successfully | username={}", requestDto.getUserName());
 
             // 3. Build User Entity
-            UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).email(requestDto.getEmail()).password(encodedPassword).roleId(role).build();
+            UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).email(requestDto.getEmail()).password(encodedPassword).status(requestDto.isStatus()).roleId(role).build();
 
             // 4. Save User
             UserEntity savedUser = userRepository.save(userRequest);
 
             log.info("User created successfully | userId={} | username={} | email={} | role={}", savedUser.getId(), savedUser.getUserName(), savedUser.getEmail(), role.getRoleName());
 
-            // 5. Build Response
-            return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(requestDto.getName()).email(savedUser.getEmail()).role(role).build();
+            // 5. Create User-Role mapping
+            UserRoleEntity userRole = new UserRoleEntity();
+
+            userRole.setUser(savedUser);
+            userRole.setRole(role);
+
+            UserRoleEntity savedUserRole = userRoleRepository.save(userRole);
+
+            log.info("User-role mapping created successfully | userId={} | roleId={} | userRoleId={}", savedUser.getId(), role.getId(), savedUserRole.getId());
+
+            // 6. Build Response
+            return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(savedUser.getName()).email(savedUser.getEmail()).role(role).build();
 
         } catch (RuntimeException ex) {
 
@@ -71,32 +84,31 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-        @Override
-        public List<CreateUserResponseDto> getUsers() {
-            try {
-                List<UserEntity> users = userRepository.findAll();
-                return users.stream().map
-                        (user -> CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build()).collect(Collectors.toList());
-            } catch (Exception e) {
-                throw new RuntimeException("Error while getting users from database");
-            }
+    @Override
+    public List<CreateUserResponseDto> getUsers() {
+        try {
+            List<UserEntity> users = userRepository.findAll();
+            return users.stream().map(user -> CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build()).collect(Collectors.toList());
+        } catch (Exception e) {
+            throw new RuntimeException("Error while getting users from database");
         }
+    }
 
-        @Override
-        public CreateUserResponseDto getUserById (UUID id){
-            try {
-                Optional<UserEntity> userData = userRepository.findById(id);
-                UserEntity user = userData.orElseThrow(() -> new RuntimeException("Role not found"));
-                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build();
-            } catch (Exception e) {
-                log.error("Error while getting user : {}", e.getMessage());
-                throw new RuntimeException("Error while getting user" + e.getMessage());
-            }
+    @Override
+    public CreateUserResponseDto getUserById(UUID id) {
+        try {
+            Optional<UserEntity> userData = userRepository.findById(id);
+            UserEntity user = userData.orElseThrow(() -> new RuntimeException("Role not found"));
+            return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build();
+        } catch (Exception e) {
+            log.error("Error while getting user : {}", e.getMessage());
+            throw new RuntimeException("Error while getting user" + e.getMessage());
         }
+    }
 
     @Override
     public CreateUserResponseDto updatePasswordById(UUID id, CreateUserRequestDto request) {
-        try{
+        try {
             UserEntity user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
             String encodedPassword = passwordEncoder.encode(request.getUserName());
 
@@ -104,8 +116,7 @@ public class UserServiceImpl implements UserService {
             UserEntity savedUser = userRepository.save(user);
             log.info("User Password Updated successfully : {}", savedUser.getId());
             return CreateUserResponseDto.builder().userName(savedUser.getUserName()).email(savedUser.getEmail()).build();
-        }
-        catch (RuntimeException ex) {
+        } catch (RuntimeException ex) {
             log.error("Error while updating User Password : {}", ex.getMessage());
             throw new RuntimeException("Error while updating User Password" + ex.getMessage());
         }
@@ -113,33 +124,33 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
-        public CreateUserResponseDto updateUserById (UUID id, CreateUserRequestDto updateRequest){
-            try {
+    public CreateUserResponseDto updateUserById(UUID id, CreateUserRequestDto updateRequest) {
+        try {
 
-                UserEntity getUserData = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
-                getUserData.setUserName(updateRequest.getUserName());
-                getUserData.setName(updateRequest.getName());
-                getUserData.setEmail(updateRequest.getEmail());
+            UserEntity getUserData = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+            getUserData.setUserName(updateRequest.getUserName());
+            getUserData.setName(updateRequest.getName());
+            getUserData.setEmail(updateRequest.getEmail());
 
-                UserEntity updatedUser = userRepository.save(getUserData);
-                log.info("User Updated successfully : {}", updatedUser);
-                return CreateUserResponseDto.builder().id(updatedUser.getId()).userName(updatedUser.getUserName()).name(updatedUser.getName()).email(updatedUser.getEmail()).build();
-            } catch (Exception e) {
-                log.error("Error while updating User : {}", e.getMessage());
-                throw new RuntimeException("Error while updating User" + e.getMessage());
-            }
-
-
+            UserEntity updatedUser = userRepository.save(getUserData);
+            log.info("User Updated successfully : {}", updatedUser);
+            return CreateUserResponseDto.builder().id(updatedUser.getId()).userName(updatedUser.getUserName()).name(updatedUser.getName()).email(updatedUser.getEmail()).build();
+        } catch (Exception e) {
+            log.error("Error while updating User : {}", e.getMessage());
+            throw new RuntimeException("Error while updating User" + e.getMessage());
         }
 
-        @Override
-        public void deleteUserById (UUID id){
-            try {
-                userRepository.deleteById(id);
-            } catch (Exception e) {
-                log.error("Error while deleting role : {}", e.getMessage());
-                throw new RuntimeException("Error while deleting role" + e.getMessage());
-            }
+
+    }
+
+    @Override
+    public void deleteUserById(UUID id) {
+        try {
+            userRepository.deleteById(id);
+        } catch (Exception e) {
+            log.error("Error while deleting role : {}", e.getMessage());
+            throw new RuntimeException("Error while deleting role" + e.getMessage());
         }
+    }
 
 }
