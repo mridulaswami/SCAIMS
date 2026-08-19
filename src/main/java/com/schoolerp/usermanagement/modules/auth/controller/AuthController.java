@@ -50,7 +50,7 @@ public class AuthController {
     // =========================================================
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<LoginResponseDto>> refreshToken(HttpServletRequest request) {
+    public ResponseEntity<ApiResponse<LoginResponseDto>> refreshToken(HttpServletRequest request, HttpServletResponse res) {
 
         log.info("POST /api/v1/auth/refresh request received");
 
@@ -58,7 +58,7 @@ public class AuthController {
 
             String refreshToken = extractRefreshToken(request);
 
-            LoginResponseDto response = authService.refreshToken(refreshToken);
+            LoginResponseDto response = authService.refreshToken(refreshToken, res);
 
             return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "Access token refreshed successfully", response));
 

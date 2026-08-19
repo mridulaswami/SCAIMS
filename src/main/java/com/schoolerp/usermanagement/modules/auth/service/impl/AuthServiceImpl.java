@@ -1,16 +1,20 @@
 package com.schoolerp.usermanagement.modules.auth.service.impl;
 
+import com.schoolerp.usermanagement.modules.auth.entity.AuthEntity;
+import com.schoolerp.usermanagement.modules.auth.repository.AuthEntityRepository;
 import com.schoolerp.usermanagement.modules.auth.requestDto.LoginRequestDto;
 import com.schoolerp.usermanagement.modules.auth.responseDto.LoginResponseDto;
 import com.schoolerp.usermanagement.modules.auth.service.AuthService;
-import com.schoolerp.usermanagement.modules.auth.repository.AuthEntityRepository;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
+
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -18,6 +22,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -29,9 +36,17 @@ public class AuthServiceImpl implements AuthService {
     private final AuthEntityRepository authRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
+    /*
+     * Access Token Expiration
+     * Default = 15 minutes
+     */
     @Value("${app.jwt.expiration-ms:900000}")
     private long accessTokenExpirationMs;
 
+    /*
+     * Refresh Token Expiration
+     * Default = 7 days
+     */
     @Value("${app.jwt.refresh-token-expiration-ms:604800000}")
     private long refreshTokenExpirationMs;
 
@@ -50,13 +65,19 @@ public class AuthServiceImpl implements AuthService {
 
         try {
 
-            // 1. Authenticate username + password
+            // =====================================================
+            // 1. AUTHENTICATE USERNAME + PASSWORD
+            // =====================================================
+
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(requestDto.getUserName(), requestDto.getPassword()));
 
             log.debug("User authentication successful | username={}", requestDto.getUserName());
 
 
-            // 2. Find User
+            // =====================================================
+            // 2. FIND USER
+            // =====================================================
+
             UserEntity user = userRepository.findByUserName(requestDto.getUserName()).orElseThrow(() -> {
 
                 log.warn("Login failed - user not found | username={}", requestDto.getUserName());
@@ -65,43 +86,113 @@ public class AuthServiceImpl implements AuthService {
             });
 
 
-            // 3. Check User Status
-//            if (!user.isStatus()) {
-//
-//                log.warn("Login rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
-//
-//                throw new RuntimeException("User account is inactive");
-//            }
+            // =====================================================
+            // 3. CHECK USER STATUS
+            // =====================================================
+
+            /*
+            if (!user.isStatus()) {
+
+                log.warn(
+                        "Login rejected - user inactive | userId={} | username={}",
+                        user.getId(),
+                        user.getUserName()
+                );
+
+                throw new RuntimeException(
+                        "User account is inactive"
+                );
+            }
+            */
 
 
-            // 4. Get Role
+            // =====================================================
+            // 4. GET ROLE
+            // =====================================================
+
             String role = user.getRoleId().getRoleName();
 
             log.debug("User role loaded | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
 
 
-            // 5. Generate Access Token
+            // =====================================================
+            // 5. GENERATE ACCESS TOKEN
+            // =====================================================
+
             String accessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), role);
 
 
-            // 6. Generate Refresh Token
+            // =====================================================
+            // 6. GENERATE REFRESH TOKEN
+            // =====================================================
+
             String refreshToken = jwtTokenProvider.generateRefreshToken(user.getUserName());
 
 
-            // 7. Store Refresh Token
-            // Keep your existing AuthEntity save logic here
-            // if you are storing refresh token in auths table.
+            // =====================================================
+            // 7. CALCULATE TOKEN EXPIRATION
+            // =====================================================
+
+            LocalDateTime now = LocalDateTime.now();
+
+            LocalDateTime accessTokenExpireAt = now.plus(Duration.ofMillis(accessTokenExpirationMs));
+
+            LocalDateTime refreshTokenExpireAt = now.plus(Duration.ofMillis(refreshTokenExpirationMs));
+
+            log.debug("Token expiry calculated | accessExpireAt={} | refreshExpireAt={}", accessTokenExpireAt, refreshTokenExpireAt);
 
 
-            // 8. Add Refresh Token Cookie
+            // =====================================================
+            // 8. FIND EXISTING AUTH ENTITY
+            // =====================================================
+
+            AuthEntity authEntity = authRepository.findByUserId(user).orElseGet(AuthEntity::new);
+
+
+            // =====================================================
+            // 9. SET AUTH DATA
+            // =====================================================
+
+            authEntity.setUserId(user);
+
+            authEntity.setAccessToken(accessToken);
+
+            authEntity.setRefreshToken(refreshToken);
+
+            authEntity.setAccessTokenExpireAt(accessTokenExpireAt);
+
+            authEntity.setRefreshTokenExpireAt(refreshTokenExpireAt);
+
+
+            // =====================================================
+            // 10. SAVE AUTH ENTITY
+            // =====================================================
+
+            authRepository.save(authEntity);
+
+            log.info("Auth token saved successfully | userId={} | username={}", user.getId(), user.getUserName());
+
+
+            // =====================================================
+            // 11. ADD REFRESH TOKEN COOKIE
+            // =====================================================
+
             addRefreshTokenCookie(response, refreshToken);
 
+
+            // =====================================================
+            // 12. LOGIN SUCCESS LOG
+            // =====================================================
 
             log.info("Login successful | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
 
 
-            // 9. Build Response
+            // =====================================================
+            // 13. BUILD RESPONSE
+            // =====================================================
+
             return LoginResponseDto.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType("Bearer").user(user).build();
+
 
         } catch (BadCredentialsException ex) {
 
@@ -123,12 +214,16 @@ public class AuthServiceImpl implements AuthService {
     // =========================================================
 
     @Override
-    @Transactional(readOnly = true)
-    public LoginResponseDto refreshToken(String refreshToken) {
+    @Transactional
+    public LoginResponseDto refreshToken(String refreshToken, HttpServletResponse response) {
 
         log.info("Refresh token request received");
 
         try {
+
+            // =====================================================
+            // 1. CHECK REFRESH TOKEN
+            // =====================================================
 
             if (refreshToken == null || refreshToken.isBlank()) {
 
@@ -138,7 +233,10 @@ public class AuthServiceImpl implements AuthService {
             }
 
 
-            // 1. Validate JWT
+            // =====================================================
+            // 2. VALIDATE JWT
+            // =====================================================
+
             if (!jwtTokenProvider.validateToken(refreshToken)) {
 
                 log.warn("Refresh token validation failed");
@@ -147,7 +245,10 @@ public class AuthServiceImpl implements AuthService {
             }
 
 
-            // 2. Check Token Type
+            // =====================================================
+            // 3. CHECK TOKEN TYPE
+            // =====================================================
+
             if (!jwtTokenProvider.validateRefreshToken(refreshToken)) {
 
                 log.warn("Invalid token type - expected REFRESH");
@@ -156,11 +257,17 @@ public class AuthServiceImpl implements AuthService {
             }
 
 
-            // 3. Extract Username
+            // =====================================================
+            // 4. EXTRACT USERNAME
+            // =====================================================
+
             String username = jwtTokenProvider.getUsernameFromJWT(refreshToken);
 
 
-            // 4. Find User
+            // =====================================================
+            // 5. FIND USER
+            // =====================================================
+
             UserEntity user = userRepository.findByUserName(username).orElseThrow(() -> {
 
                 log.warn("Refresh failed - user not found | username={}", username);
@@ -169,28 +276,113 @@ public class AuthServiceImpl implements AuthService {
             });
 
 
-            // 5. Check User Status
-//            if (!user.isStatus()) {
-//
-//                log.warn("Refresh rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
-//
-//                throw new RuntimeException("User account is inactive");
-//            }
+            // =====================================================
+            // 6. CHECK USER STATUS
+            // =====================================================
+
+            /*
+            if (!user.isStatus()) {
+
+                log.warn(
+                        "Refresh rejected - user inactive | userId={} | username={}",
+                        user.getId(),
+                        user.getUserName()
+                );
+
+                throw new RuntimeException(
+                        "User account is inactive"
+                );
+            }
+            */
 
 
-            // 6. Get Role
+            // =====================================================
+            // 7. GET ROLE
+            // =====================================================
+
             String role = user.getRoleId().getRoleName();
 
 
-            // 7. Generate New Access Token
-            String accessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), role);
+            // =====================================================
+            // 8. GENERATE NEW ACCESS TOKEN
+            // =====================================================
+
+            String newAccessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), role);
 
 
-            log.info("Access token refreshed successfully | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
+            // =====================================================
+            // 9. GENERATE NEW REFRESH TOKEN
+            // =====================================================
+
+            String newRefreshToken = jwtTokenProvider.generateRefreshToken(user.getUserName());
 
 
-            // 8. Return Response
-            return LoginResponseDto.builder().accessToken(accessToken).tokenType("Bearer").user(user).build();
+            // =====================================================
+            // 10. CALCULATE NEW TOKEN EXPIRATION
+            // =====================================================
+
+            LocalDateTime now = LocalDateTime.now();
+
+            LocalDateTime newAccessTokenExpireAt = now.plus(Duration.ofMillis(accessTokenExpirationMs));
+
+            LocalDateTime newRefreshTokenExpireAt = now.plus(Duration.ofMillis(refreshTokenExpirationMs));
+
+
+            // =====================================================
+            // 11. FIND EXISTING AUTH ENTITY
+            // =====================================================
+
+            AuthEntity authEntity = authRepository.findByUserId(user).orElseThrow(() -> {
+
+                log.warn("Auth entry not found | userId={}", user.getId());
+
+                return new RuntimeException("Authentication session not found");
+            });
+
+
+            // =====================================================
+            // 12. UPDATE AUTH ENTITY
+            // =====================================================
+
+            authEntity.setAccessToken(newAccessToken);
+
+            authEntity.setRefreshToken(newRefreshToken);
+
+            authEntity.setAccessTokenExpireAt(newAccessTokenExpireAt);
+
+            authEntity.setRefreshTokenExpireAt(newRefreshTokenExpireAt);
+
+
+            // =====================================================
+            // 13. SAVE UPDATED AUTH ENTITY
+            // =====================================================
+
+            authRepository.save(authEntity);
+
+
+            log.info("Auth tokens updated successfully | userId={} | username={}", user.getId(), user.getUserName());
+
+
+            // =====================================================
+            // 14. UPDATE REFRESH TOKEN COOKIE
+            // =====================================================
+
+            addRefreshTokenCookie(response, newRefreshToken);
+
+
+            // =====================================================
+            // 15. SUCCESS LOG
+            // =====================================================
+
+            log.info("Access and refresh tokens refreshed successfully | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
+
+
+            // =====================================================
+            // 16. RETURN NEW TOKENS
+            // =====================================================
+
+            return LoginResponseDto.builder().accessToken(newAccessToken).refreshToken(newRefreshToken).tokenType("Bearer").user(user).build();
+
 
         } catch (RuntimeException ex) {
 
@@ -213,6 +405,10 @@ public class AuthServiceImpl implements AuthService {
 
         try {
 
+            // =====================================================
+            // 1. CHECK ACCESS TOKEN
+            // =====================================================
+
             if (accessToken == null || accessToken.isBlank()) {
 
                 log.warn("Logout failed - access token missing");
@@ -221,14 +417,20 @@ public class AuthServiceImpl implements AuthService {
             }
 
 
-            // Remove Bearer prefix
+            // =====================================================
+            // 2. REMOVE BEARER PREFIX
+            // =====================================================
+
             if (accessToken.startsWith("Bearer ")) {
 
                 accessToken = accessToken.substring(7);
             }
 
 
-            // 1. Validate Access Token
+            // =====================================================
+            // 3. VALIDATE ACCESS TOKEN
+            // =====================================================
+
             if (!jwtTokenProvider.validateToken(accessToken)) {
 
                 log.warn("Logout failed - invalid access token");
@@ -237,7 +439,10 @@ public class AuthServiceImpl implements AuthService {
             }
 
 
-            // 2. Make sure it is ACCESS token
+            // =====================================================
+            // 4. MAKE SURE TOKEN IS ACCESS TOKEN
+            // =====================================================
+
             if (!jwtTokenProvider.validateAccessToken(accessToken)) {
 
                 log.warn("Logout failed - token is not ACCESS token");
@@ -246,11 +451,17 @@ public class AuthServiceImpl implements AuthService {
             }
 
 
-            // 3. Get Username
+            // =====================================================
+            // 5. EXTRACT USERNAME
+            // =====================================================
+
             String username = jwtTokenProvider.getUsernameFromJWT(accessToken);
 
 
-            // 4. Find User
+            // =====================================================
+            // 6. FIND USER
+            // =====================================================
+
             UserEntity user = userRepository.findByUserName(username).orElseThrow(() -> {
 
                 log.warn("Logout failed - user not found | username={}", username);
@@ -259,15 +470,26 @@ public class AuthServiceImpl implements AuthService {
             });
 
 
-            // 5. Delete Auth / Refresh Token Entry
-            authRepository.deleteByUserId(user.getId());
+            // =====================================================
+            // 7. DELETE AUTH ENTRY
+            // =====================================================
+
+            authRepository.deleteByUserId(user);
 
 
-            // 6. Clear Refresh Token Cookie
+            // =====================================================
+            // 8. CLEAR REFRESH TOKEN COOKIE
+            // =====================================================
+
             clearRefreshTokenCookie(response);
 
 
+            // =====================================================
+            // 9. SUCCESS LOG
+            // =====================================================
+
             log.info("Logout successful | userId={} | username={} | auth entry deleted", user.getId(), user.getUserName());
+
 
         } catch (RuntimeException ex) {
 

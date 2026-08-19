@@ -10,7 +10,7 @@ public interface AuthService {
 
     LoginResponseDto login(LoginRequestDto requestDto, HttpServletResponse response);
 
-    LoginResponseDto refreshToken(String refreshToken);
+    LoginResponseDto refreshToken(String refreshToken, HttpServletResponse response);
 
     void logout(String accessToken, HttpServletResponse response);
 }

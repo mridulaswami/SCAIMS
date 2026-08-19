@@ -2,6 +2,10 @@ package com.schoolerp.usermanagement.modules.auth.entity;
 
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -12,6 +16,10 @@ import java.util.UUID;
 
 @Table(name = "auths")
 @Entity
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthEntity {
 
     @Id
@@ -25,10 +33,10 @@ public class AuthEntity {
     private String refreshToken;
 
     @Column(name = "access_token_expire_at", nullable = false)
-    private LocalDate accessTokenExpireAt;
+    private LocalDateTime accessTokenExpireAt;
 
     @Column(name = "refresh_token_expire_at", nullable = false)
-    private LocalDate refreshTokenExpireAt;
+    private LocalDateTime refreshTokenExpireAt;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
