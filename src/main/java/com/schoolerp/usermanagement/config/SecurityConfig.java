@@ -105,6 +105,9 @@ public class SecurityConfig {
                         // Authentication APIs
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
+                        //UserCreate APIs
+                        .requestMatchers("/api/v1/users").permitAll()
+
                         // Role APIs
                         .requestMatchers("/api/v1/roles/**").permitAll()
 
