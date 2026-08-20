@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 
-@Table(name="assets")
+@Table(name="child_assets")
 @Entity
 @Data
 @Builder
@@ -35,6 +35,10 @@ public class AssetEntity {
 
     @Column(name="geometry" , columnDefinition = "geometry(Geometry,4326)")
     private Geometry geometry;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_asset_id")
+    private ParentAssetEntity parentAsset;
 
     @Column(name="status")
     private String status;
