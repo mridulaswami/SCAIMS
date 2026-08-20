@@ -2,6 +2,6 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/scaims
     username: postgres
-    password: Singh@201931
+    password: 1234
     driver-class-name : org.postgresql.Driver
     
