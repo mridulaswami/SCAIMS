@@ -1,5 +1,7 @@
 package com.schoolerp.usermanagement.security;
 
+import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
+import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.List;
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserEntityRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -26,7 +29,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         log.debug("Loading user for authentication | username={}", username);
 
-        UserEntity user = userRepository.findByUserNameWithRole(username).orElseThrow(() -> {
+        UserEntity user = userRepository.findByUserName (username).orElseThrow(() -> {
 
             log.warn("Authentication failed - user not found | username={}", username);
 
@@ -43,7 +46,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         // ROLE
         // =====================================================
 
-        String roleName = user.getRoleId().getRoleName();
+        UserRoleEntity userRole = userRoleRepository.findByUserId(user.getId()).stream().findFirst().orElseThrow(() -> new RuntimeException("Role not assigned to user"));
+        String roleName = userRole.getRole().getRoleName();
+
 
         // Prevent ROLE_ROLE_ADMIN
         if (roleName.startsWith("ROLE_")) {

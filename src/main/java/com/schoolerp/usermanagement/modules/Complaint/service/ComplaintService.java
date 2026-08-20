@@ -12,7 +12,7 @@ public interface ComplaintService {
 
     ComplaintResponseDto createComplaint(CreateComplaintRequestDto request);
 
-    List<GetAllComplaintsResponseDto> getAllComplaints();
+    List<GetAllComplaintsResponseDto> getAllComplaints(String token);
 
 
 }

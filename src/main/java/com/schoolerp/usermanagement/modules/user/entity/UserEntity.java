@@ -37,10 +37,6 @@ public class UserEntity {
     @Column(name = "password", nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "role_id", nullable = false)
-    private RoleEntity roleId;
-
     @Column(name = "status", nullable = false)
     private boolean status = true;
 

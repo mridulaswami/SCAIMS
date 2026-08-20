@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.UUID;
 
 @Component
 @Slf4j
@@ -58,13 +59,13 @@ public class JwtTokenProvider {
     /**
      * Generate Access Token
      */
-    public String generateAccessToken(String username, String role) {
+    public String generateAccessToken(String username, UUID id, String role) {
 
         Date now = new Date();
 
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
 
-        return Jwts.builder().setSubject(username).claim("tokenType", "ACCESS").claim("role", role).setIssuedAt(now).setExpiration(expiryDate).signWith(signingKey, SignatureAlgorithm.HS256).compact();
+        return Jwts.builder().setSubject(username).claim("tokenType", "ACCESS").claim("userId", id).claim("role", role).setIssuedAt(now).setExpiration(expiryDate).signWith(signingKey, SignatureAlgorithm.HS256).compact();
     }
 
     /**
@@ -113,6 +114,30 @@ public class JwtTokenProvider {
         Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
 
         return claims.get("phoneNumber", String.class);
+    }
+
+    /**
+     * Extract UserId
+     */
+    public String getUserIdFromJWT(String token) {
+
+        token = removeBearerPrefix(token);
+
+        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+
+        return claims.get("userId", String.class);
+    }
+
+    /**
+     * Extract UserId
+     */
+    public String getRoleFromJWT(String token) {
+
+        token = removeBearerPrefix(token);
+
+        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+
+        return claims.get("role", String.class);
     }
 
     /**

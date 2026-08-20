@@ -15,6 +15,7 @@ import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
+import com.schoolerp.usermanagement.security.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -41,6 +43,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final ComplaintPhotosRepository complaintPhotosRepository;
     private final AssetRepository assetRepository;
     private final GeometryService geometryConverter;
+    private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -165,12 +168,41 @@ public class ComplaintServiceImpl implements ComplaintService {
     }
 
     @Override
-    @Transactional
-    public List<GetAllComplaintsResponseDto> getAllComplaints() {
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public List<GetAllComplaintsResponseDto> getAllComplaints(String token) {
 
         log.info("Started getting all complaints");
 
-        List<ComplaintEntity> complaints = complaintRepository.findAll();
+        String role = jwtTokenProvider.getRoleFromJWT(token);
+        String userId = jwtTokenProvider.getUserIdFromJWT(token);
+
+        log.info("Fetched role={} | userId={}", role, userId);
+
+        if (role == null || role.isBlank()) {
+            throw new RuntimeException("User role not found in token");
+        }
+
+        if (userId == null || userId.isBlank()) {
+            throw new RuntimeException("User ID not found in token");
+        }
+        UUID userUuid = UUID.fromString(userId);
+
+        Optional<UserEntity> userOptional = userEntityRepository.findById(userUuid);
+
+        List<ComplaintEntity> complaints;
+
+        if ("ADMIN".equalsIgnoreCase(role)) {
+
+            log.debug("Admin user | Fetching all complaints");
+
+            complaints = complaintRepository.findAll();
+
+        } else {
+
+            log.debug("Citizen user | Fetching complaints | userId={}", userUuid);
+
+            complaints = complaintRepository.findByCitizenId(userOptional);
+        }
 
         log.info("Complaints fetched successfully | count={}", complaints.size());
 

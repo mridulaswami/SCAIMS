@@ -18,13 +18,6 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
 
     boolean existsByEmail(String email);
 
-
-    @Query("""
-        SELECT u
-        FROM UserEntity u
-        JOIN FETCH u.roleId r
-        WHERE u.userName = :userName
-    """)
-    Optional<UserEntity> findByUserNameWithRole(@Param("userName") String userName);
+    Optional<UserEntity> findById(UUID userId);
 
 }
