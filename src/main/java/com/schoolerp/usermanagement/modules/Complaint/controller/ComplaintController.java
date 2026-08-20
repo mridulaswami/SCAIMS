@@ -43,11 +43,18 @@ public class ComplaintController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<GetAllComplaintsResponseDto>>> getAllComplaints() {
+    @PreAuthorize("hasAnyRole('ADMIN','CITIZEN')")
+    public ResponseEntity<ApiResponse<List<GetAllComplaintsResponseDto>>> getAllComplaints(@RequestHeader("Authorization") String authorizationHeader) {
 
         log.info("Get all complaints API request received");
-        List<GetAllComplaintsResponseDto> response = complaintService.getAllComplaints();
+
+        String token = "";
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            token = authorizationHeader.substring(7);
+            log.info("Token Found {}", token);
+        }
+
+        List<GetAllComplaintsResponseDto> response = complaintService.getAllComplaints(token);
 
         log.info("Get all complaints API completed successfully | count={}", response.size());
 

@@ -22,6 +22,7 @@ spring:
 
 server:
   port: 8003
+  address: 0.0.0.0
   servlet:
     context-path: /user-management-service
 
