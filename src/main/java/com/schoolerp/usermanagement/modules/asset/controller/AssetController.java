@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/auth/assets")
+@RequestMapping("/api/v1/assets")
 @RequiredArgsConstructor
 @Slf4j
 public class AssetController {

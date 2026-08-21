@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("api/v1/auth/complaints")
+@RequestMapping("api/v1git s/complaints")
 @RequiredArgsConstructor
 @Slf4j
 public class ComplaintController {
