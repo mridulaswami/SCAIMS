@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.WorkOrder.entity;
 
+import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintEntity;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.inspection.entity.InspectionEntity;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
-@Table(name="work_order")
+@Table(name = "work_order")
 @Entity
 @Data
 @Builder
@@ -27,34 +28,42 @@ public class WorkOrderEntity {
     private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "asset_id")
-    private AssetEntity assetId;
+    @JoinColumn(name = "complaint_id")
+    private ComplaintEntity complaintId;
 
     @ManyToOne
-    @JoinColumn(name = "assigned_to")
-    private InspectionEntity assignedTo;
+    @JoinColumn(name = "user_id")
+    private UserEntity inspectorId;
 
-    @Column(name="priority")
-    private String priority;
+    @Column(name = "priority")
+    @Enumerated(EnumType.STRING)
+    private Priority priority;
 
     @Enumerated(EnumType.STRING)
-    @Column(name="status")
+    @Column(name = "status")
     private Status status;
 
+    @Column(name = "work_report", nullable = true)
+    private String workReport;
+
     @CreationTimestamp
-    @Column(name="due_date")
+    @Column(name = "due_date")
     private LocalDateTime dueDate;
 
     @CreationTimestamp
-    @Column(name="created_at")
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @CreationTimestamp
-    @Column(name="closed_at")
+    @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
     public enum Status {
-        OPEN, ASSIGNED, IN_PROGRESS, RESOLVED , CLOSED
+        ASSIGNED, IN_PROGRESS, RESOLVED, CLOSED
+    }
+
+    public enum Priority {
+        LOW, HIGH, MEDIUM
     }
 
 }

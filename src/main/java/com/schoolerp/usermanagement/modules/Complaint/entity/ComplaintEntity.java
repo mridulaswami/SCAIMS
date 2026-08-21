@@ -50,6 +50,6 @@ public class ComplaintEntity {
     private WorkOrderEntity linkedWorkOrderId;
 
     public enum Status {
-        SUBMITTED, TRIAGED, CONVERTED, REJECTED
+        SUBMITTED, INPROGESS, REJECTED, COMPLETED
     }
 }
