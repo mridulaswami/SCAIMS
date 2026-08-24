@@ -135,7 +135,12 @@ public class SecurityConfig {
                         // -----------------------------------------
                         // Authentication APIs
                         // -----------------------------------------
-                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/auth/login").permitAll()
+
+                        // -----------------------------------------
+                        // Authentication APIs
+                        // -----------------------------------------
+                        .requestMatchers("/api/v1/auth/refresh").permitAll()
 
                         // -----------------------------------------
                         // User Create API
