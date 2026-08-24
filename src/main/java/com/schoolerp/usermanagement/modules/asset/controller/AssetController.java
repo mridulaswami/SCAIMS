@@ -4,7 +4,6 @@ package com.schoolerp.usermanagement.modules.asset.controller;
 import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
-import com.schoolerp.usermanagement.modules.asset.responseDto.ParentAssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.ChildAssetResponseDto;

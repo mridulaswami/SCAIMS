@@ -7,7 +7,6 @@ import com.schoolerp.usermanagement.modules.asset.entity.ParentAssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.asset.repository.ParentAssetRepository;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
-import com.schoolerp.usermanagement.modules.asset.responseDto.ParentAssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.ChildAssetResponseDto;
