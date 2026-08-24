@@ -13,7 +13,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AssetresponseDto {
+public class AssetCreateResponseDto {
 
     private UUID id;
     private String name;

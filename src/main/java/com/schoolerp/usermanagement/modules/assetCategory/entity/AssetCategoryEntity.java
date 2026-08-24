@@ -21,6 +21,7 @@ public class AssetCategoryEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @Column(name = "name",unique = true)
     private String name;
 
     @Column(name="icon_key")

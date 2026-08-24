@@ -1,4 +1,4 @@
-package com.schoolerp.usermanagement.modules.asset.repository;
+package com.schoolerp.usermanagement.modules.asset.responseDto;
 
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import lombok.AllArgsConstructor;
@@ -7,13 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class ParentAssetResponseDto {
+@NoArgsConstructor
+public class AssetResponseDto {
 
     private UUID id;
 
@@ -22,6 +23,8 @@ public class ParentAssetResponseDto {
     private UUID categoryId;
 
     private GeometryDto geometry;
+
+    private UUID parentAssetId;
 
     private String status;
 
@@ -32,4 +35,6 @@ public class ParentAssetResponseDto {
     private LocalDateTime installedDate;
 
     private LocalDateTime lastInspectedDate;
+
+    private List<AssetResponseDto> children;
 }
