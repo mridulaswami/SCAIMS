@@ -19,4 +19,42 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID> {
             """)
     List<AssetEntity> findByParentAssetId(@Param("parentAssetId") UUID parentAssetId);
 
+
+    @Query(value = """
+            WITH nearby_parents AS (
+                SELECT
+                    p.id,
+                    ST_Distance(
+                        p.geometry::geography,
+                        ST_SetSRID(
+                            ST_MakePoint(:longitude, :latitude),
+                            4326
+                        )::geography
+                    ) AS distance
+                FROM assets p
+                WHERE p.parent_asset_id IS NULL
+                  AND ST_DWithin(
+                      p.geometry::geography,
+                      ST_SetSRID(
+                          ST_MakePoint(:longitude, :latitude),
+                          4326
+                      )::geography,
+                      :radius
+                  )
+            )
+            SELECT a.*
+            FROM assets a
+            INNER JOIN nearby_parents p
+                ON a.id = p.id
+                OR a.parent_asset_id = p.id
+            ORDER BY
+                p.distance,
+                CASE
+                    WHEN a.id = p.id THEN 0
+                    ELSE 1
+                END,
+                a.name
+            """, nativeQuery = true)
+    List<AssetEntity> findNearbyParentsWithChildren(@Param("longitude") double longitude, @Param("latitude") double latitude, @Param("radius") double radius);
+
 }

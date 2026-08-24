@@ -6,7 +6,9 @@ import com.schoolerp.usermanagement.modules.Complaint.repository.ComplaintReposi
 import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderEntity;
 import com.schoolerp.usermanagement.modules.WorkOrder.repository.WorkOrderEntityRepository;
 import com.schoolerp.usermanagement.modules.WorkOrder.requestDto.CreateWorkOrderRequestDto;
+import com.schoolerp.usermanagement.modules.WorkOrder.requestDto.StatusChangeRequestDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.CreateWorkOrderResponseDto;
+import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.StatusChangeResponseDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.service.WorkOrderService;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
@@ -70,4 +72,24 @@ public class WorkOrderServiceImpl implements WorkOrderService {
          */
         return CreateWorkOrderResponseDto.builder().id(savedWorkOrder.getId()).complaintId(savedWorkOrder.getComplaintId().getId()).inspectorId(savedWorkOrder.getInspectorId().getId()).priority(savedWorkOrder.getPriority()).status(savedWorkOrder.getStatus()).dueDate(savedWorkOrder.getDueDate()).createdAt(savedWorkOrder.getCreatedAt()).build();
     }
+
+//    public StatusChangeResponseDto changeStatus(StatusChangeRequestDto requestDto) {
+//
+//        log.info("statred Change status for Work Item request: {}", requestDto);
+//
+//        //step: 1 Find the Work Item
+//
+//        Optional<WorkOrderEntity> existWorkOrderEntity = workOrderRepository.findById(requestDto.getId());
+//
+//        if (!existWorkOrderEntity.isPresent()) {
+//
+//            log.info(" Work Order Not Found or Invalid work Order Id. workOrderId: {}", requestDto.getId());
+//
+//            throw new RuntimeException(" Work Order Not Found or Invalid work Order Id. workOrderId: " + requestDto.getId());
+//        }
+//
+//
+//
+//
+//    }
 }
