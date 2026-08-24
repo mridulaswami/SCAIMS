@@ -4,9 +4,11 @@ import com.schoolerp.usermanagement.security.JwtAccessDeniedHandler;
 import com.schoolerp.usermanagement.security.JwtAuthenticationEntryPoint;
 import com.schoolerp.usermanagement.security.JwtAuthenticationFilter;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -25,6 +27,7 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
 
     public SecurityConfig(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService) {
+
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
     }
@@ -45,6 +48,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAuthenticationEntryPoint authenticationEntryPoint() {
+
         return new JwtAuthenticationEntryPoint();
     }
 
@@ -54,6 +58,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtAccessDeniedHandler accessDeniedHandler() {
+
         return new JwtAccessDeniedHandler();
     }
 
@@ -63,6 +68,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
 
@@ -84,40 +90,77 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-                // Disable CSRF because this is REST API + JWT
+
+                // =================================================
+                // CSRF
+                // =================================================
                 .csrf(csrf -> csrf.disable())
 
-                // Exception handling
+                // =================================================
+                // CORS
+                // Uses CorsConfigurationSource bean
+                // =================================================
+                .cors(Customizer.withDefaults())
+
+                // =================================================
+                // EXCEPTION HANDLING
+                // =================================================
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint()).accessDeniedHandler(accessDeniedHandler()))
 
-                // Stateless JWT authentication
+                // =================================================
+                // STATELESS SESSION
+                // =================================================
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-                // Authorization
+                // =================================================
+                // AUTHORIZATION
+                // =================================================
                 .authorizeHttpRequests(auth -> auth
 
+                        // -----------------------------------------
+                        // CORS Preflight
+                        // -----------------------------------------
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // -----------------------------------------
                         // Swagger
+                        // -----------------------------------------
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
+                        // -----------------------------------------
                         // Actuator
+                        // -----------------------------------------
                         .requestMatchers("/actuator/**").permitAll()
 
+                        // -----------------------------------------
                         // Authentication APIs
+                        // -----------------------------------------
                         .requestMatchers("/api/v1/auth/**").permitAll()
 
-                        //UserCreate APIs
+                        // -----------------------------------------
+                        // User Create API
+                        // -----------------------------------------
                         .requestMatchers("/api/v1/users").permitAll()
 
+                        // -----------------------------------------
                         // Role APIs
+                        // -----------------------------------------
                         .requestMatchers("/api/v1/roles/**").permitAll()
 
-                        // Everything else requires JWT
+                        // -----------------------------------------
+                        // All other API requires JWT
+                        // -----------------------------------------
                         .requestMatchers("/api/v1/**").authenticated()
 
-                        .anyRequest().authenticated());
+                        // -----------------------------------------
+                        // Everything else
+                        // -----------------------------------------
+                        .anyRequest().authenticated())
 
-        // JWT Filter
-        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                // =================================================
+                // JWT FILTER
+                // =================================================
+                .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
