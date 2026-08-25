@@ -14,4 +14,5 @@ public class StatusChangeResponseDto {
 
 
     private WorkOrderEntity.Status status;
+    private String workReport;
 }

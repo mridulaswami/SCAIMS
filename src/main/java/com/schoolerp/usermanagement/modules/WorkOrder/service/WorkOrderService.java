@@ -10,5 +10,5 @@ public interface WorkOrderService {
 
     CreateWorkOrderResponseDto createWorkOrder(CreateWorkOrderRequestDto request);
 
-//    StatusChangeResponseDto changeStatus(StatusChangeRequestDto requestDto);
+    StatusChangeResponseDto changeStatus(StatusChangeRequestDto requestDto);
 }
