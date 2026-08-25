@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 
-@Table(name="asset_category")
+@Table(name="asset_category" , uniqueConstraints = @UniqueConstraint(columnNames = "name"))
 @Entity
 @Data
 @Builder
@@ -29,4 +29,8 @@ public class AssetCategoryEntity {
 
     @Column(name="default_layer_color")
     private String defaultLayerColor;
+
+    public AssetCategoryEntity(String name) {
+        this.name = name;
+    }
 }
