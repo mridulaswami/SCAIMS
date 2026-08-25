@@ -16,7 +16,7 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
 
-        return new OpenAPI().info(new Info().title("User Management Service API").version("v1").description("APIs for user management"))
+        return new OpenAPI().info(new Info().title("Smart City Management API").version("v1").description("APIs for user management"))
 
                 // JWT Bearer Authentication
                 .components(new Components().addSecuritySchemes(SECURITY_SCHEME_NAME, new SecurityScheme().name("Authorization").type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")))
