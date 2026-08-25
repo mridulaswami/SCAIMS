@@ -117,17 +117,22 @@ public class AuthController {
 
     private String extractRefreshToken(HttpServletRequest request) {
 
-        if (request.getCookies() == null) {
-            throw new RuntimeException("Refresh token cookie not found");
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new RuntimeException("Authorization header not found");
         }
 
-        for (Cookie cookie : request.getCookies()) {
-
-            if ("refreshToken".equals(cookie.getName())) {
-                return cookie.getValue();
-            }
+        if (!authorizationHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid Authorization header");
         }
 
-        throw new RuntimeException("Refresh token cookie not found");
+        String refreshToken = authorizationHeader.substring(7).trim();
+
+        if (refreshToken.isBlank()) {
+            throw new RuntimeException("Refresh token not found");
+        }
+
+        return refreshToken;
     }
 }
