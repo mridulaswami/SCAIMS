@@ -26,9 +26,9 @@ public interface AssetImportRepository extends JpaRepository<AssetEntity, UUID> 
             JOIN assets p
               ON ST_Contains(p.geometry, c2.geometry)
              AND p.id <> c2.id
-             AND GeometryType(p.geometry) = 'POLYGON'
-            WHERE GeometryType(c2.geometry) = 'POINT'
+             AND GeometryType(p.geometry) IN ('POLYGON','LINESTRING')
               AND c2.parent_asset_id IS NULL
+                    AND GeometryType(c2.geometry) IN ('POINT', 'POLYGON','LINESTRING')
             ORDER BY c2.id, ST_Area(p.geometry) ASC
         ) sub
         WHERE c.id = sub.child_id
