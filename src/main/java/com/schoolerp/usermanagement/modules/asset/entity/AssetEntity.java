@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.locationtech.jts.geom.Geometry;
 
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -54,4 +55,8 @@ public class AssetEntity {
     @CreationTimestamp
     @Column(name = "last_inspected_date")
     private LocalDateTime lastInspectionDate;
+
+    private String source_type;
+
+    private long source_id;
 }

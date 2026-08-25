@@ -81,7 +81,20 @@ public class OsmImportServiceImpl implements OsmImportService{
 
         assetCategoryRepository.flush();
 
-        assetRepository.saveAll(entity);
+    //    assetRepository.saveAll(entity);
+
+        for(AssetEntity asset : entity){
+            assetRepository.upsertAsset(
+                    asset.getName(),
+                    asset.getCategoryId().getId(),
+                    asset.getGeometry().toText(),
+                    asset.getSource_type(),
+                    asset.getSource_id()
+
+            );
+        }
+
+
         assetRepository.flush();
 
         int linkedParents = assetImportRepository.backfillParentAssignments();
@@ -151,6 +164,8 @@ public class OsmImportServiceImpl implements OsmImportService{
         asset.setName(name);
         asset.setCategoryId(assetCategoryRepository.getReferenceById(catId));
         asset.setGeometry(geom);
+        asset.setSource_id(el.getId());
+        asset.setSource_type(el.getType());
         return asset;
 
     }
@@ -167,7 +182,7 @@ public class OsmImportServiceImpl implements OsmImportService{
 
         String tagName = el.getTags() != null ? el.getTags().get("name") :null;
 
-        String osmName = el.getTags() != null ? "%s-%d".formatted(el.getTags().get("name"), el.getId()) : null;
+      //  String osmName = el.getTags() != null ? "%s-%d".formatted(el.getTags().get("name"), el.getId()) : null;
 
         if(tagName != null && !tagName.isBlank()){
             return "%s-%d".formatted(tagName, el.getId());
