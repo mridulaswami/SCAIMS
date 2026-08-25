@@ -1,0 +1,1 @@
+ALTER TABLE public.assets DROP CONSTRAINT assets_parent_asset_id_fkey;
