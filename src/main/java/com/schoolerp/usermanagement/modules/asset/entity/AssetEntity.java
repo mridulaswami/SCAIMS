@@ -58,5 +58,5 @@ public class AssetEntity {
 
     private String source_type;
 
-    private long source_id;
+    private Long source_id;
 }

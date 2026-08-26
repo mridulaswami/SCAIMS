@@ -1,6 +1,7 @@
 package com.schoolerp.usermanagement.modules.Complaint.requestDto;
 
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -18,19 +19,15 @@ import java.util.UUID;
 @NoArgsConstructor
 public class CreateComplaintRequestDto {
 
-    @NotNull
-    private UUID citizenId;
-
     @NotBlank
     private String title;
 
-    @NotBlank
     private String description;
 
     @NotNull
     private UUID asset;
 
-    private String geometry;
+    private String location;
 
     private List<MultipartFile> photos;
 }

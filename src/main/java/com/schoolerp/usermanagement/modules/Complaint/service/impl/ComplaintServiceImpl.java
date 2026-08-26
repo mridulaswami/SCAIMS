@@ -48,17 +48,17 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     @Transactional
-    public ComplaintResponseDto createComplaint(CreateComplaintRequestDto request) {
+    public ComplaintResponseDto createComplaint(CreateComplaintRequestDto request, UUID citizenId) {
 
-        log.info("Creating complaint | citizenId={} | title={} | assetId={}", request.getCitizenId(), request.getTitle(), request.getAsset());
+        log.info("Creating complaint | citizenId={} | title={} | assetId={}", citizenId, request.getTitle(), request.getAsset());
 
         // Step 1: Find citizen
-        log.debug("Fetching citizen | citizenId={}", request.getCitizenId());
+        log.debug("Fetching citizen | citizenId={}", citizenId);
 
-        UserEntity citizen = userEntityRepository.findById(request.getCitizenId()).orElseThrow(() -> {
-            log.warn("Citizen not found | citizenId={}", request.getCitizenId());
+        UserEntity citizen = userEntityRepository.findById(citizenId).orElseThrow(() -> {
+            log.warn("Citizen not found | citizenId={}", citizenId);
 
-            return new RuntimeException("Citizen not found with id: " + request.getCitizenId());
+            return new RuntimeException("Citizen not found with id: " + citizenId);
         });
 
         // Step 2: Find asset
@@ -70,25 +70,75 @@ public class ComplaintServiceImpl implements ComplaintService {
             return new RuntimeException("Asset not found with id: " + request.getAsset());
         });
 
-        // Step 3: Convert geometry
-        log.debug("Converting complaint geometry | citizenId={} | assetId={}", request.getCitizenId(), request.getAsset());
+        // Step 3: Convert location
+        log.debug("Converting complaint location | citizenId={} | assetId={}", citizenId, request.getAsset());
 
         GeometryDto geometryDto;
 
         try {
-            geometryDto = objectMapper.readValue(request.getGeometry(), GeometryDto.class);
+
+            JsonNode locationNode = objectMapper.readTree(request.getLocation());
+
+            JsonNode coordinatesNode = locationNode.get("coordinates");
+
+            // Validate coordinates
+            if (coordinatesNode == null || !coordinatesNode.isArray()) {
+
+                log.warn("Invalid complaint coordinates | location={}", request.getLocation());
+
+                throw new IllegalArgumentException("Location coordinates are required");
+            }
+
+            // Point must contain exactly longitude and latitude
+            if (coordinatesNode.size() != 2) {
+
+                log.warn("Invalid Point coordinates | coordinates={}", coordinatesNode);
+
+                throw new IllegalArgumentException("Point must contain longitude and latitude");
+            }
+
+            double longitude = coordinatesNode.get(0).asDouble();
+            double latitude = coordinatesNode.get(1).asDouble();
+
+            // Validate coordinate range
+            if (longitude < -180 || longitude > 180) {
+
+                throw new IllegalArgumentException("Invalid longitude. Must be between -180 and 180");
+            }
+
+            if (latitude < -90 || latitude > 90) {
+
+                throw new IllegalArgumentException("Invalid latitude. Must be between -90 and 90");
+            }
+
+            // Backend hardcodes Point
+            geometryDto = new GeometryDto();
+            geometryDto.setType("Point");
+
+            List<Double> coordinates = new ArrayList<>();
+            coordinates.add(longitude);
+            coordinates.add(latitude);
+
+            geometryDto.setCoordinates(coordinates);
+
+            log.debug("Complaint location parsed successfully | longitude={} | latitude={}", longitude, latitude);
+
+        } catch (IllegalArgumentException e) {
+
+            throw e;
+
         } catch (Exception e) {
 
-            log.error("Invalid complaint geometry | geometry={}", request.getGeometry(), e);
+            log.error("Invalid complaint location | location={}", request.getLocation(), e);
 
-            throw new IllegalArgumentException("Invalid geometry format");
+            throw new IllegalArgumentException("Invalid location format. Expected: {\"coordinates\":[longitude,latitude]}");
         }
 
         Geometry geometry = geometryConverter.toJtsGeometry(geometryDto);
 
         if (geometry == null) {
 
-            log.warn("Complaint geometry conversion returned null | citizenId={}", request.getCitizenId());
+            log.warn("Complaint geometry conversion returned null | citizenId={} | assetId={}", citizenId, request.getAsset());
 
             throw new IllegalArgumentException("Complaint location is required");
         }
@@ -96,12 +146,12 @@ public class ComplaintServiceImpl implements ComplaintService {
         // Step 4: Create complaint
         ComplaintEntity complaint = ComplaintEntity.builder().citizenId(citizen).title(request.getTitle()).asset(asset).description(request.getDescription()).location(geometry).status(ComplaintEntity.Status.SUBMITTED).build();
 
-        log.debug("Complaint entity prepared | citizenId={} | assetId={} | geometryType={} | status={}", request.getCitizenId(), request.getAsset(), geometry.getGeometryType(), complaint.getStatus());
+        log.debug("Complaint entity prepared | citizenId={} | assetId={} | geometryType={} | status={}", citizenId, request.getAsset(), geometry.getGeometryType(), complaint.getStatus());
 
         // Step 5: Save complaint
         ComplaintEntity savedComplaint = complaintRepository.save(complaint);
 
-        log.info("Complaint created successfully | complaintId={} | citizenId={} | assetId={} | status={}", savedComplaint.getId(), request.getCitizenId(), request.getAsset(), savedComplaint.getStatus());
+        log.info("Complaint created successfully | complaintId={} | citizenId={} | assetId={} | status={}", savedComplaint.getId(), citizenId, request.getAsset(), savedComplaint.getStatus());
 
         // Step 6: Save complaint photos
         if (request.getPhotos() != null && !request.getPhotos().isEmpty()) {
@@ -111,7 +161,9 @@ public class ComplaintServiceImpl implements ComplaintService {
             for (MultipartFile photo : request.getPhotos()) {
 
                 if (photo == null || photo.isEmpty()) {
+
                     log.warn("Skipping empty complaint photo | complaintId={}", savedComplaint.getId());
+
                     continue;
                 }
 
@@ -134,6 +186,7 @@ public class ComplaintServiceImpl implements ComplaintService {
             }
 
         } else {
+
             log.debug("No photos received | complaintId={}", savedComplaint.getId());
         }
 
