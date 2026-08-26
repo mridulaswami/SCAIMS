@@ -6,11 +6,12 @@ import com.schoolerp.usermanagement.modules.Complaint.responseDto.GetAllComplain
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public interface ComplaintService {
 
-    ComplaintResponseDto createComplaint(CreateComplaintRequestDto request);
+    ComplaintResponseDto createComplaint(CreateComplaintRequestDto request, UUID userId);
 
     List<GetAllComplaintsResponseDto> getAllComplaints(String token);
 
