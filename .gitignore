@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Upload Folder ###
+/uploads/
