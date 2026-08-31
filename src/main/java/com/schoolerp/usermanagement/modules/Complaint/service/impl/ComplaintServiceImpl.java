@@ -265,7 +265,7 @@ public class ComplaintServiceImpl implements ComplaintService {
 
             List<String> photos = complaintPhotosRepository.findByComplaintId(complaint.getId()).stream().map(ComplaintPhotosEntity::getPhotoUrl).toList();
 
-            return GetAllComplaintsResponseDto.builder().id(complaint.getId()).citizenId(complaint.getCitizenId().getId()).assetId(complaint.getAsset().getId()).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus().name()).location(geometryConverter.fromJtsGeometry(complaint.getLocation())).photos(photos).build();
+            return GetAllComplaintsResponseDto.builder().id(complaint.getId()).citizenId(complaint.getCitizenId().getId()).assetId(complaint.getAsset().getId()).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus().name()).location(geometryConverter.fromJtsGeometry(complaint.getLocation())).photos(photos).createdAt(complaint.getCreatedAt()).updatedAt(complaint.getUpdatedAt()).build();
         }).toList();
     }
 }
