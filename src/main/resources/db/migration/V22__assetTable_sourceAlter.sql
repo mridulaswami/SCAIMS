@@ -1,3 +1,4 @@
+
 ALTER TABLE assets ADD COLUMN source_type VARCHAR(20);
 ALTER TABLE assets ADD COLUMN source_id int;
 

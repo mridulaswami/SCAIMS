@@ -12,11 +12,12 @@ public interface AssetCategoryRepository extends JpaRepository<AssetCategoryEnti
 
     @Modifying
     @Query(value = """
-        INSERT INTO asset_category (name)
-        VALUES (:name)
+        INSERT INTO asset_category (name, icon_key)
+        VALUES (:name , :icon_key)
         ON CONFLICT (name) DO NOTHING
         """, nativeQuery = true)
-    void upsert(@Param("name") String name);
+    void upsert(@Param("name") String name,
+        @Param("icon_key") String icon_key);
 
 
 
