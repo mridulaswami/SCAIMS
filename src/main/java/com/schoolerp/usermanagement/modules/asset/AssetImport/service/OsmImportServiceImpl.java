@@ -57,6 +57,8 @@ public class OsmImportServiceImpl implements OsmImportService{
         List<AssetEntity> entity = new ArrayList<>();
 
         Set<String> categories = new HashSet<>();
+        List<OverpassElementDto> validElements = new ArrayList<>();
+
 
         for(OverpassElementDto elements : response.getElements()){
 
@@ -68,22 +70,42 @@ public class OsmImportServiceImpl implements OsmImportService{
             GeometryShape shape = shapeClassifier(elements);
             if(shape == GeometryShape.UNSUPPORTED) continue;
 
-            String name = resolveName(elements, category);
+            validElements.add(elements);
 
-            AssetEntity asset = saveAsset(elements , category, shape, name);
-
-            entity.add(asset);
+//            String name = resolveName(elements, category);
+//
+//            AssetEntity asset = saveAsset(elements , category, shape, name);
+//
+//            entity.add(asset);
         }
 
         for(String name : categories) {
-            assetCategoryRepository.upsert(name);
+            String iconKey;
+            if(name.equals("BUILDING")){
+                iconKey="building";
+            }else if(name.equals("PARK")){
+                iconKey="park";
+            }else if(name.equals("STREET LAMP")){
+                iconKey="point";
+            }else
+                iconKey="amenity";
+
+            assetCategoryRepository.upsert(name,iconKey);
         }
 
         assetCategoryRepository.flush();
 
     //    assetRepository.saveAll(entity);
 
-        for(AssetEntity asset : entity){
+        List<AssetEntity> assetentity = new ArrayList<>();
+        for (OverpassElementDto elements : validElements) {
+            String category = categoryResolver(elements.getTags());
+            GeometryShape shape = shapeClassifier(elements);
+            String name = resolveName(elements, category);
+            assetentity.add(saveAsset(elements, category, shape, name));
+        }
+
+        for(AssetEntity asset : assetentity){
             assetRepository.upsertAsset(
                     asset.getName(),
                     asset.getCategoryId().getId(),
