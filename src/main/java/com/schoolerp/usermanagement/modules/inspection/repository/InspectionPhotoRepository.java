@@ -1,0 +1,9 @@
+package com.schoolerp.usermanagement.modules.inspection.repository;
+
+import com.schoolerp.usermanagement.modules.inspection.entity.InspectionPhotoEntity;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface InspectionPhotoRepository extends JpaRepository<InspectionPhotoEntity, UUID> {
+}
