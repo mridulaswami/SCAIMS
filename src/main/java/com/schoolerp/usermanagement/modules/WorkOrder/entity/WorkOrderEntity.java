@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.WorkOrder.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintEntity;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.inspection.entity.InspectionEntity;
@@ -14,6 +15,7 @@ import org.locationtech.jts.geom.Geometry;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.List;
 import java.util.UUID;
 
 @Table(name = "work_order")
@@ -27,6 +29,7 @@ public class WorkOrderEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "complaint_id")
     private ComplaintEntity complaintId;
@@ -57,6 +60,9 @@ public class WorkOrderEntity {
     @CreationTimestamp
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
+
+    @OneToMany(mappedBy = "workOrderId", fetch = FetchType.EAGER)
+    private List<WorkOrderPhotoEntity> photos;
 
     public enum Status {
         ASSIGNED, IN_PROGRESS, RESOLVED, CLOSED
