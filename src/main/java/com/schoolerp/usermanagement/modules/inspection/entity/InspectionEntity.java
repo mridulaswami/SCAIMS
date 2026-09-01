@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.inspection.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import jakarta.persistence.*;
@@ -39,7 +40,7 @@ public class InspectionEntity {
     @Column(name="inspected_at")
     private LocalDateTime inspectedAt;
 
-    @Column(name="geo_tag" , columnDefinition = "geometry(Point,4326)" , nullable = false)
+    @Column(name = "geo_tag" , columnDefinition = "geometry(Point,4326)" , nullable = false)
     private Point geoTag;
 
 }

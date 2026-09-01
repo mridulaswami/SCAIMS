@@ -52,7 +52,6 @@ public class AssetEntity {
     @Column(name = "installed_date")
     private LocalDateTime installedDate;
 
-    @CreationTimestamp
     @Column(name = "last_inspected_date")
     private LocalDateTime lastInspectionDate;
 
