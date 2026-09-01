@@ -6,14 +6,6 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   mail:
-    host: smtp.gmail.com
-    port: 587
     username: abhinav.singh@jellyfishtechnologies.com
     password: evjkcwytstpyzezo
 
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
