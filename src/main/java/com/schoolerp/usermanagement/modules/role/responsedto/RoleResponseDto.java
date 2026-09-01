@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class RoleResponseDto {
 
-    private UUID id;
+    private Integer id;
 
     private String roleName;
 

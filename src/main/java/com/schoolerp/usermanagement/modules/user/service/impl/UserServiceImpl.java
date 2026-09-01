@@ -46,30 +46,45 @@ public class UserServiceImpl implements UserService {
 
         try {
 
-            // 1. Find Role
-            RoleEntity role = roleEntityRepository.findById(requestDto.getRoleId()).orElseThrow(() -> {
+            // 1. Check existing username
+            if (userRepository.existsByUserName(requestDto.getUserName())) {
+                throw new RuntimeException("Username already exists");
+            }
 
-                log.warn("User creation failed - Role not found | roleId={}", requestDto.getRoleId());
+            // 2. Check existing email
+            if (userRepository.existsByEmail(requestDto.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
 
+            // 3. Check existing phone number
+            if (userRepository.existsByPhone(requestDto.getPhoneNumber())) {
+                throw new RuntimeException("Phone number already exists");
+            }
+
+            // 4. Find Role
+            Integer roleId = requestDto.getRoleId() != null ? requestDto.getRoleId() : 2;
+
+            RoleEntity role = roleEntityRepository.findById(roleId).orElseThrow(() -> {
+                log.warn("User creation failed - Role not found | roleId={}", roleId);
                 return new RuntimeException("Role not found");
             });
 
             log.debug("Role found successfully | roleId={} | roleName={}", role.getId(), role.getRoleName());
 
-            // 2. Encrypt Password
+            // 5. Encrypt Password
             String encodedPassword = passwordEncoder.encode(requestDto.getPassword());
 
             log.debug("User password encrypted successfully | username={}", requestDto.getUserName());
 
-            // 3. Build User Entity
+            // 6. Build User Entity
             UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).phone(requestDto.getPhoneNumber()).email(requestDto.getEmail()).password(encodedPassword).status(requestDto.isStatus()).build();
 
-            // 4. Save User
+            // 7. Save User
             UserEntity savedUser = userRepository.save(userRequest);
 
             log.info("User created successfully | userId={} | username={} | email={} | role={}", savedUser.getId(), savedUser.getUserName(), savedUser.getEmail(), role.getRoleName());
 
-            // 5. Create User-Role mapping
+            // 8. Create User-Role mapping
             UserRoleEntity userRole = new UserRoleEntity();
 
             userRole.setUser(savedUser);
@@ -79,21 +94,15 @@ public class UserServiceImpl implements UserService {
 
             log.info("User-role mapping created successfully | userId={} | roleId={} | userRoleId={}", savedUser.getId(), role.getId(), savedUserRole.getId());
 
-            // 6. Send Registration Success Email
-            EmailRequestDto emailRequest = EmailRequestDto.builder().to(savedUser.getEmail()).subject(EmailSubjectConstant.USER_REGISTRATION_SUCCESS).template(EmailTemplateConstant.USER_REGISTRATION_SUCCESS).variables(Map.of("name", savedUser.getName(),
-
-                    "email", savedUser.getEmail(),
-
-                    "userName", savedUser.getUserName(),
-
-                    "role", role.getRoleName())).build();
+            // 9. Send Registration Success Email
+            EmailRequestDto emailRequest = EmailRequestDto.builder().to(savedUser.getEmail()).subject(EmailSubjectConstant.USER_REGISTRATION_SUCCESS).template(EmailTemplateConstant.USER_REGISTRATION_SUCCESS).variables(Map.of("name", savedUser.getName(), "email", savedUser.getEmail(), "userName", savedUser.getUserName(), "role", role.getRoleName())).build();
 
             emailService.sendEmail(emailRequest);
 
             log.info("User registration email triggered | userId={} | email={}", savedUser.getId(), savedUser.getEmail());
 
-            // 7. Build Response
-            return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(savedUser.getName()).email(savedUser.getEmail()).role(role).build();
+            // 10. Build Response
+            return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(savedUser.getName()).phoneNumber(requestDto.getPhoneNumber()).email(savedUser.getEmail()).role(role).build();
 
         } catch (RuntimeException ex) {
 
@@ -107,7 +116,7 @@ public class UserServiceImpl implements UserService {
     public List<CreateUserResponseDto> getUsers() {
         try {
             List<UserEntity> users = userRepository.findAll();
-            log.info("users",users);
+            log.info("users", users);
             return users.stream().map(user -> CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build()).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database");
@@ -175,23 +184,15 @@ public class UserServiceImpl implements UserService {
 
     public List<CreateUserResponseDto> getUserByRole(UUID roleId) {
         try {
-            List<UserRoleEntity> usersByRoleId =
-                    userRoleRepository.findByRoleId(roleId);
+            List<UserRoleEntity> usersByRoleId = userRoleRepository.findByRoleId(roleId);
 
             System.out.println(usersByRoleId);
 
-            return usersByRoleId.stream()
-                    .map(userRole -> {
-                        UserEntity user = userRole.getUser();
+            return usersByRoleId.stream().map(userRole -> {
+                UserEntity user = userRole.getUser();
 
-                        return CreateUserResponseDto.builder()
-                                .id(user.getId())
-                                .userName(user.getUserName())
-                                .name(user.getName())
-                                .email(user.getEmail())
-                                .build();
-                    })
-                    .collect(Collectors.toList());
+                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build();
+            }).collect(Collectors.toList());
 
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database", e);

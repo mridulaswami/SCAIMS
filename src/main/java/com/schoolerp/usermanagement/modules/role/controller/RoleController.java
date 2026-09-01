@@ -44,7 +44,7 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<RoleResponseDto>> updateRole(@Valid @PathVariable UUID id, @RequestBody RoleRequestDto updateRequest) {
+    public ResponseEntity<ApiResponse<RoleResponseDto>> updateRole(@Valid @PathVariable Integer id, @RequestBody RoleRequestDto updateRequest) {
 
         log.info("Role Request DTO : {}", updateRequest);
         try {
@@ -64,9 +64,9 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteRoleById(@Valid @PathVariable UUID id) {
+    public ResponseEntity<?> deleteRoleById(@Valid @PathVariable Integer id) {
         try {
-             roleService.deleteRoleById(id);
+            roleService.deleteRoleById(id);
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             log.error("Error occurred while deleting role", e.getMessage());
@@ -86,15 +86,14 @@ public class RoleController {
                 log.info("No roles data present");
                 throw new Exception("Roles Data fetch failed");
             }
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             log.error("Error occurred while fetching roles", e.getMessage());
             throw new RuntimeException("Error occurred while fetching roles");
         }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RoleResponseDto>> getRoleById(@PathVariable UUID id) {
+    public ResponseEntity<ApiResponse<RoleResponseDto>> getRoleById(@PathVariable Integer id) {
         try {
             RoleResponseDto roleData = roleService.getRoleById(id);
             if (roleData != null) {
@@ -104,8 +103,7 @@ public class RoleController {
                 log.info("No data present");
                 throw new Exception("Data fetch failed");
             }
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             log.error("Error occurred while fetching role", e.getMessage());
             throw new RuntimeException("Error occurred while fetching role");
         }

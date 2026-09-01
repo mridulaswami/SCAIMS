@@ -57,7 +57,7 @@ public class WorkOrderEntity {
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @CreationTimestamp
+//    @CreationTimestamp
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
 
