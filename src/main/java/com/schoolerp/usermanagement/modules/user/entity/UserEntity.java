@@ -32,7 +32,7 @@ public class UserEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name="phone number", nullable=true, unique = true)
+    @Column(name="phone_number", nullable=true, unique = true)
     @Size(min = 10,max = 10)
     private String phone;
 
