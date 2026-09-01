@@ -22,6 +22,8 @@ public class CreateUserResponseDto {
 
     private String name;
 
+    private String phoneNumber
+
     private String email;
 
     private RoleEntity role;

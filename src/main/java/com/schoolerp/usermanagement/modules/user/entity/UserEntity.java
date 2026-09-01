@@ -2,6 +2,7 @@ package com.schoolerp.usermanagement.modules.user.entity;
 
 import com.schoolerp.usermanagement.modules.role.entity.RoleEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,6 +31,10 @@ public class UserEntity {
 
     @Column(name = "name", nullable = false)
     private String name;
+
+    @Column(name="phone number", nullable=true, unique = true)
+    @Size(min = 10,max = 10)
+    private String phone;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;

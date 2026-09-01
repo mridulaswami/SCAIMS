@@ -62,7 +62,7 @@ public class UserServiceImpl implements UserService {
             log.debug("User password encrypted successfully | username={}", requestDto.getUserName());
 
             // 3. Build User Entity
-            UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).email(requestDto.getEmail()).password(encodedPassword).status(requestDto.isStatus()).build();
+            UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).phone(requestDto.getPhoneNumber()).email(requestDto.getEmail()).password(encodedPassword).status(requestDto.isStatus()).build();
 
             // 4. Save User
             UserEntity savedUser = userRepository.save(userRequest);
@@ -107,6 +107,7 @@ public class UserServiceImpl implements UserService {
     public List<CreateUserResponseDto> getUsers() {
         try {
             List<UserEntity> users = userRepository.findAll();
+            log.info("users",users);
             return users.stream().map(user -> CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build()).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database");
@@ -169,6 +170,31 @@ public class UserServiceImpl implements UserService {
         } catch (Exception e) {
             log.error("Error while deleting role : {}", e.getMessage());
             throw new RuntimeException("Error while deleting role" + e.getMessage());
+        }
+    }
+
+    public List<CreateUserResponseDto> getUserByRole(UUID roleId) {
+        try {
+            List<UserRoleEntity> usersByRoleId =
+                    userRoleRepository.findByRoleId(roleId);
+
+            System.out.println(usersByRoleId);
+
+            return usersByRoleId.stream()
+                    .map(userRole -> {
+                        UserEntity user = userRole.getUser();
+
+                        return CreateUserResponseDto.builder()
+                                .id(user.getId())
+                                .userName(user.getUserName())
+                                .name(user.getName())
+                                .email(user.getEmail())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error while getting users from database", e);
         }
     }
 

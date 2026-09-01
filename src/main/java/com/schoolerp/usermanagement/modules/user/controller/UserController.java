@@ -3,6 +3,7 @@ package com.schoolerp.usermanagement.modules.user.controller;
 import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
 import com.schoolerp.usermanagement.modules.role.responsedto.RoleResponseDto;
+import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
 import com.schoolerp.usermanagement.modules.user.service.UserService;
@@ -100,10 +101,19 @@ public class UserController {
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers() {
+    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) UUID roleId,@RequestParam(required = false) String search) {
+
+        List<CreateUserResponseDto> UsersData;
         try {
-            List<CreateUserResponseDto> UsersData = userService.getUsers();
-            if (UsersData != null) {
+
+            if (roleId != null) {
+                UsersData = userService.getUserByRole(roleId);
+                System.out.println(UsersData);
+            } else {
+                UsersData = userService.getUsers();
+            }
+            log.info("UserData{}", UsersData);
+            if (!UsersData.isEmpty()) {
                 log.info("Got all the data from the User service");
                 return ResponseEntity.ok(new ApiResponse<>(true, "Data found", UsersData));
             } else {
