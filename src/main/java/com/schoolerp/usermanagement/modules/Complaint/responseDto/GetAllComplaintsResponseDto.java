@@ -1,12 +1,13 @@
 package com.schoolerp.usermanagement.modules.Complaint.responseDto;
 
-import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintPhotosEntity;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.WorkOrderResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,4 +32,10 @@ public class GetAllComplaintsResponseDto {
     private GeometryDto location;
 
     private List<String> photos;
+
+    private WorkOrderResponseDto workOrder;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
 }

@@ -2,8 +2,6 @@ spring:
   application:
     name: USER-MANAGEMENT-SERVICE
 
-  profiles:
-    active: dev
 
   flyway:
     enabled: true
@@ -19,6 +17,16 @@ spring:
     multipart:
       max-file-size: 3MB
       max-request-size: 3MB
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 server:
   port: 8003

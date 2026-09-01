@@ -8,8 +8,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.locationtech.jts.geom.Geometry;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Table(name = "complaint")
@@ -43,11 +47,22 @@ public class ComplaintEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private Status status = Status.SUBMITTED ;
+    private Status status = Status.SUBMITTED;
 
     @OneToOne
     @JoinColumn(name = "linked_work_order_id")
     private WorkOrderEntity linkedWorkOrderId;
+
+    @OneToOne(mappedBy = "complaintId", fetch = FetchType.EAGER)
+    private WorkOrderEntity workOrder;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at", updatable = true)
+    private LocalDateTime updatedAt;
 
     public enum Status {
         SUBMITTED, INPROGESS, REJECTED, COMPLETED

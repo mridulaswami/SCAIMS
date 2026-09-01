@@ -13,4 +13,6 @@ import java.util.UUID;
 public interface ComplaintRepository extends JpaRepository<ComplaintEntity, UUID> {
 
     List<ComplaintEntity> findByCitizenId(Optional<UserEntity> citizenId);
+
+
 }

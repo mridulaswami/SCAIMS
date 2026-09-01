@@ -11,6 +11,9 @@ import com.schoolerp.usermanagement.modules.Complaint.responseDto.GetAllComplain
 import com.schoolerp.usermanagement.modules.Complaint.service.ComplaintService;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryService;
+import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderEntity;
+import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderPhotoEntity;
+import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.WorkOrderResponseDto;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
@@ -263,9 +266,20 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         return complaints.stream().map(complaint -> {
 
-            List<String> photos = complaintPhotosRepository.findByComplaintId(complaint.getId()).stream().map(ComplaintPhotosEntity::getPhotoUrl).toList();
+            List<String> complaintPhotos = complaintPhotosRepository.findByComplaintId(complaint.getId()).stream().map(ComplaintPhotosEntity::getPhotoUrl).toList();
 
-            return GetAllComplaintsResponseDto.builder().id(complaint.getId()).citizenId(complaint.getCitizenId().getId()).assetId(complaint.getAsset().getId()).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus().name()).location(geometryConverter.fromJtsGeometry(complaint.getLocation())).photos(photos).build();
+            WorkOrderResponseDto workOrderDto = null;
+
+            if (complaint.getWorkOrder() != null) {
+
+                WorkOrderEntity workOrder = complaint.getWorkOrder();
+
+                List<String> workOrderPhotos = workOrder.getPhotos() != null ? workOrder.getPhotos().stream().map(WorkOrderPhotoEntity::getPhotoUrl).toList() : List.of();
+
+                workOrderDto = WorkOrderResponseDto.builder().id(workOrder.getId()).complaintId(workOrder.getComplaintId() != null ? workOrder.getComplaintId().getId() : null).inspectorId(workOrder.getInspectorId() != null ? workOrder.getInspectorId().getId() : null).priority(workOrder.getPriority() != null ? workOrder.getPriority().name() : null).status(workOrder.getStatus() != null ? workOrder.getStatus().name() : null).workReport(workOrder.getWorkReport()).dueDate(workOrder.getDueDate()).createdAt(workOrder.getCreatedAt()).closedAt(workOrder.getClosedAt()).photos(workOrderPhotos).build();
+            }
+
+            return GetAllComplaintsResponseDto.builder().id(complaint.getId()).citizenId(complaint.getCitizenId() != null ? complaint.getCitizenId().getId() : null).assetId(complaint.getAsset() != null ? complaint.getAsset().getId() : null).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus() != null ? complaint.getStatus().name() : null).location(complaint.getLocation() != null ? geometryConverter.fromJtsGeometry(complaint.getLocation()) : null).photos(complaintPhotos).workOrder(workOrderDto).createdAt(complaint.getCreatedAt()).updatedAt(complaint.getUpdatedAt()).build();
         }).toList();
     }
 }

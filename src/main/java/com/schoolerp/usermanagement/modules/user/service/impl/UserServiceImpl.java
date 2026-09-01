@@ -2,6 +2,10 @@ package com.schoolerp.usermanagement.modules.user.service.impl;
 
 import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
 import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
+import com.schoolerp.usermanagement.modules.email.constant.EmailSubjectConstant;
+import com.schoolerp.usermanagement.modules.email.constant.EmailTemplateConstant;
+import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
+import com.schoolerp.usermanagement.modules.email.service.EmailService;
 import com.schoolerp.usermanagement.modules.role.entity.RoleEntity;
 import com.schoolerp.usermanagement.modules.role.repository.RoleEntityRepository;
 import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
@@ -18,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -31,6 +36,7 @@ public class UserServiceImpl implements UserService {
     private final RoleEntityRepository roleEntityRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserRoleRepository userRoleRepository;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -73,7 +79,20 @@ public class UserServiceImpl implements UserService {
 
             log.info("User-role mapping created successfully | userId={} | roleId={} | userRoleId={}", savedUser.getId(), role.getId(), savedUserRole.getId());
 
-            // 6. Build Response
+            // 6. Send Registration Success Email
+            EmailRequestDto emailRequest = EmailRequestDto.builder().to(savedUser.getEmail()).subject(EmailSubjectConstant.USER_REGISTRATION_SUCCESS).template(EmailTemplateConstant.USER_REGISTRATION_SUCCESS).variables(Map.of("name", savedUser.getName(),
+
+                    "email", savedUser.getEmail(),
+
+                    "userName", savedUser.getUserName(),
+
+                    "role", role.getRoleName())).build();
+
+            emailService.sendEmail(emailRequest);
+
+            log.info("User registration email triggered | userId={} | email={}", savedUser.getId(), savedUser.getEmail());
+
+            // 7. Build Response
             return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(savedUser.getName()).email(savedUser.getEmail()).role(role).build();
 
         } catch (RuntimeException ex) {
