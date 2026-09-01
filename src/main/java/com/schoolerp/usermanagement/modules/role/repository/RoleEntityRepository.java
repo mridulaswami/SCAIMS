@@ -8,10 +8,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface RoleEntityRepository extends JpaRepository <RoleEntity , UUID> {
+public interface RoleEntityRepository extends JpaRepository <RoleEntity , Integer> {
 
     @Override
-    Optional<RoleEntity> findById(UUID uuid);
+    Optional<RoleEntity> findById(Integer uuid);
 
 
 }

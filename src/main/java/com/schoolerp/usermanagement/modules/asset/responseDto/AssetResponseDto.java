@@ -1,6 +1,7 @@
 package com.schoolerp.usermanagement.modules.asset.responseDto;
 
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,6 +22,8 @@ public class AssetResponseDto {
     private String name;
 
     private UUID categoryId;
+
+    private AssetCategoryEntity assetCategory;
 
     private GeometryDto geometry;
 

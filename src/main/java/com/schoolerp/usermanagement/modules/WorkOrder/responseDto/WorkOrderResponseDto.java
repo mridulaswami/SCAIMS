@@ -2,6 +2,7 @@ package com.schoolerp.usermanagement.modules.WorkOrder.responseDto;
 
 import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderEntity;
 import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderPhotoEntity;
+import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,8 @@ public class WorkOrderResponseDto {
     private UUID complaintId;
 
     private UUID inspectorId;
+
+    private UserEntity inspector;
 
     private String priority;
 

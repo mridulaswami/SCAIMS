@@ -23,7 +23,7 @@ public class RoleServiceImpl implements RoleService {
 
     private final RoleEntityRepository roleRepository;
     private final JwtTokenProvider jwtTokenProvider;
-  //  private final RoleService roleService;
+    //  private final RoleService roleService;
 
     @Override
     @Transactional
@@ -31,10 +31,7 @@ public class RoleServiceImpl implements RoleService {
         log.info("Role Request DTO : {}", request);
 
         try {
-            RoleEntity role = RoleEntity.builder().
-                    roleName(request.getRoleName()).
-                    description(request.getRoleDescription()).
-                    build();
+            RoleEntity role = RoleEntity.builder().roleName(request.getRoleName()).description(request.getRoleDescription()).build();
             roleRepository.save(role);
             log.info("Role Created successfully : {}", role);
             return RoleResponseDto.builder().id(role.getId()).roleName(role.getRoleName()).roleDescription(role.getDescription()).build();
@@ -48,23 +45,20 @@ public class RoleServiceImpl implements RoleService {
     public List<RoleResponseDto> getRoles() {
         try {
             List<RoleEntity> roles = roleRepository.findAll();
-            return roles.stream().map
-            (role -> RoleResponseDto.builder().id(role.getId()).roleName(role.getRoleName()).roleDescription(role.getDescription()).build()).collect(Collectors.toList());
-        }
-        catch(Exception e) {
+            return roles.stream().map(role -> RoleResponseDto.builder().id(role.getId()).roleName(role.getRoleName()).roleDescription(role.getDescription()).build()).collect(Collectors.toList());
+        } catch (Exception e) {
             throw new RuntimeException("Error while getting roles from database");
         }
     }
 
     @Override
-    public RoleResponseDto getRoleById(UUID id) {
+    public RoleResponseDto getRoleById(Integer id) {
         try {
             Optional<RoleEntity> roleData = roleRepository.findById(id);
             RoleEntity role = roleData.orElseThrow(() -> new RuntimeException("Role not found"));
 
             return RoleResponseDto.builder().id(role.getId()).roleName(role.getRoleName()).roleDescription(role.getDescription()).build();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error while getting role : {}", e.getMessage());
             throw new RuntimeException("Error while getting role" + e.getMessage());
         }
@@ -72,18 +66,17 @@ public class RoleServiceImpl implements RoleService {
 
 
     @Override
-    public RoleResponseDto updateRoleById(UUID id,  RoleRequestDto updateRequest) {
+    public RoleResponseDto updateRoleById(Integer id, RoleRequestDto updateRequest) {
         try {
 
-            RoleEntity getData =  roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
+            RoleEntity getData = roleRepository.findById(id).orElseThrow(() -> new RuntimeException("Role not found"));
             getData.setRoleName(updateRequest.getRoleName());
             getData.setDescription(updateRequest.getRoleDescription());
 
             RoleEntity updatedRole = roleRepository.save(getData);
             log.info("Role Updated successfully : {}", updatedRole);
             return RoleResponseDto.builder().id(updatedRole.getId()).roleName(updatedRole.getRoleName()).roleDescription(updatedRole.getDescription()).build();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error while updating role : {}", e.getMessage());
             throw new RuntimeException("Error while updating role" + e.getMessage());
         }
@@ -92,11 +85,10 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
-    public void deleteRoleById(UUID id) {
-        try{
+    public void deleteRoleById(Integer id) {
+        try {
             roleRepository.deleteById(id);
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             log.error("Error while deleting role : {}", e.getMessage());
             throw new RuntimeException("Error while deleting role" + e.getMessage());
         }

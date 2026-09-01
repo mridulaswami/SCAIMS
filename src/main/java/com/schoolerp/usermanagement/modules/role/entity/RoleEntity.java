@@ -20,8 +20,8 @@ import java.util.UUID;
 public class RoleEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
     @Column(length = 50, nullable = false, name = "role_name")
     private String roleName;

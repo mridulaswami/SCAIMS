@@ -13,10 +13,10 @@ public interface RoleService {
     public RoleResponseDto createRole(RoleRequestDto roleRequestDto);
 
     public List<RoleResponseDto> getRoles();
-    public RoleResponseDto getRoleById(UUID id);
-    public RoleResponseDto updateRoleById( UUID id, RoleRequestDto roleRequestDto);
+    public RoleResponseDto getRoleById(Integer id);
+    public RoleResponseDto updateRoleById( Integer id, RoleRequestDto roleRequestDto);
 
-    public void deleteRoleById( UUID id);
+    public void deleteRoleById( Integer id);
 
 
 }
