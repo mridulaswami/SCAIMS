@@ -101,14 +101,10 @@ public class UserController {
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) UUID roleId,@RequestParam(required = false) String field) {
+    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) UUID roleId,@RequestParam(required = false) String search) {
 
         List<CreateUserResponseDto> UsersData;
         try {
-
-            if(field!=null){
-                
-            }
 
             if (roleId != null) {
                 UsersData = userService.getUserByRole(roleId);

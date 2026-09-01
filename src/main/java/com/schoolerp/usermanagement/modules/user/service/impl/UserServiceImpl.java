@@ -62,7 +62,7 @@ public class UserServiceImpl implements UserService {
             log.debug("User password encrypted successfully | username={}", requestDto.getUserName());
 
             // 3. Build User Entity
-            UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).email(requestDto.getEmail()).password(encodedPassword).status(requestDto.isStatus()).build();
+            UserEntity userRequest = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).phone(requestDto.getPhoneNumber()).email(requestDto.getEmail()).password(encodedPassword).status(requestDto.isStatus()).build();
 
             // 4. Save User
             UserEntity savedUser = userRepository.save(userRequest);
