@@ -70,6 +70,6 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID> {
                      @Param("categoryId") UUID categoryId,
                      @Param("wkt") String wkt,
                      @Param("sourceType") String sourceType,
-                     @Param("sourceId") long sourceId);
+                     @Param("sourceId") Long sourceId);
 
 }

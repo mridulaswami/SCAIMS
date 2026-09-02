@@ -17,4 +17,6 @@ public interface AssetService {
 
     List<ChildAssetResponseDto> getChildAssets(UUID parentAssetId);
 
+    List<AssetResponseDto> getAllAssets();
+
 }
