@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -175,6 +176,17 @@ public class AssetServiceImpl implements AssetService {
         log.info("Child assets found | parentAssetId={} | count={}", parentAssetId, assets.size());
 
         return assets.stream().map(this::mapToAssetResponse).toList();
+    }
+
+    @Override
+    public List<AssetResponseDto> getAllAssets() {
+
+        List<AssetEntity> assetList = assetrepo.findAll();
+
+        return assetList.stream().map(asset -> {
+
+            return AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build();
+        }).collect(Collectors.toList());
     }
 
     private ChildAssetResponseDto mapToAssetResponse(AssetEntity asset) {

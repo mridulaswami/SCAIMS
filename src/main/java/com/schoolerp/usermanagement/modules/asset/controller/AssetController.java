@@ -3,6 +3,7 @@ package com.schoolerp.usermanagement.modules.asset.controller;
 
 import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
@@ -24,6 +25,7 @@ import java.util.UUID;
 public class AssetController {
 
     private final AssetService assetService;
+    private final AssetRepository assetRepository;
 
     @PostMapping
     public ResponseEntity<ApiResponse<AssetCreateResponseDto>> createAsset(@Valid @RequestBody AssetrequestDto request) {
@@ -80,6 +82,14 @@ public class AssetController {
 
             return ResponseEntity.internalServerError().body(ApiResponse.of(false, "Failed to fetch child assets", null));
         }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AssetResponseDto>>> getAssets(){
+
+        List<AssetResponseDto> assets = assetService.getAllAssets();
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully",assets));
     }
 
 }

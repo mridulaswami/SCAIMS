@@ -20,6 +20,8 @@ public class AssetResponseDto {
 
     private String name;
 
+    private String categoryName;
+
     private UUID categoryId;
 
     private GeometryDto geometry;
