@@ -101,7 +101,7 @@ public class UserController {
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) UUID roleId,@RequestParam(required = false) String search) {
+    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) Integer roleId, @RequestParam(required = false) String search) {
 
         List<CreateUserResponseDto> UsersData;
         try {
