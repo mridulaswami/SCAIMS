@@ -182,7 +182,7 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    public List<CreateUserResponseDto> getUserByRole(UUID roleId) {
+    public List<CreateUserResponseDto> getUserByRole(Integer roleId) {
         try {
             List<UserRoleEntity> usersByRoleId = userRoleRepository.findByRoleId(roleId);
 

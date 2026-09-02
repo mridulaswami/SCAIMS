@@ -21,6 +21,6 @@ public interface UserService {
     public CreateUserResponseDto updateUserById( UUID id, CreateUserRequestDto roleRequestDto);
 
     public void deleteUserById( UUID id);
-    public List<CreateUserResponseDto> getUserByRole(UUID id);
+    public List<CreateUserResponseDto> getUserByRole(Integer id);
 
 }
