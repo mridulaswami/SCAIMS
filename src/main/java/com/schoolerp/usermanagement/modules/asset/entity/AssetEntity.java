@@ -1,6 +1,7 @@
 package com.schoolerp.usermanagement.modules.asset.entity;
 
 import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEntity;
+import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -55,7 +56,13 @@ public class AssetEntity {
     @Column(name = "last_inspected_date")
     private LocalDateTime lastInspectionDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_inspector_id")
+    private UserEntity assignedInspector;
+
+    @Column(name = "source_type")
     private String source_type;
 
+    @Column(name = "source_id")
     private Long source_id;
 }

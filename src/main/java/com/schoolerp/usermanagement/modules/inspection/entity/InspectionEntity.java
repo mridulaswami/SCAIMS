@@ -29,15 +29,15 @@ public class InspectionEntity {
     @JoinColumn(name = "asset_id")
     private AssetEntity assetId;
 
-    @OneToOne
-    @JoinColumn(name="inspector_user_id")
+    @ManyToOne
+    @JoinColumn(name= "inspector_user_id")
     private UserEntity inspectorUserId;
 
-    @Column(name="notes")
+    @Column(name= "notes")
     private String notes;
 
     @CreationTimestamp
-    @Column(name="inspected_at")
+    @Column(name= "inspected_at")
     private LocalDateTime inspectedAt;
 
     @Column(name = "geo_tag" , columnDefinition = "geometry(Point,4326)" , nullable = false)

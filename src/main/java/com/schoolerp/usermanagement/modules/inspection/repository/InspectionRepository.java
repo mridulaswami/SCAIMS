@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface InspectionRepository extends JpaRepository<InspectionEntity, UUID>{
 
     List<InspectionEntity> findByAssetId_Id(UUID assetId);
+    List<InspectionEntity> findByInspectorUserId_Id(UUID inspectorUserId);
 }

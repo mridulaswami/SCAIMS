@@ -6,12 +6,17 @@ import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.asset.entity.ParentAssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.asset.repository.ParentAssetRepository;
+import com.schoolerp.usermanagement.modules.asset.requestDto.AssignAssetRequest;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.ChildAssetResponseDto;
 import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEntity;
 import com.schoolerp.usermanagement.modules.assetCategory.repository.AssetCategoryRepository;
+import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
+import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
+import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
+import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Geometry;
@@ -31,6 +36,8 @@ public class AssetServiceImpl implements AssetService {
     private final GeometryService geometryConverter;
     private static final double DEFAULT_RADIUS_METERS = 1000.0;
     private final ParentAssetRepository parentAssetRepository;
+    private final UserEntityRepository userEntityRepository;
+    private final UserRoleRepository userRoleRepository;
 
     @Override
     public AssetCreateResponseDto createAsset(AssetrequestDto request) {
@@ -177,9 +184,53 @@ public class AssetServiceImpl implements AssetService {
         return assets.stream().map(this::mapToAssetResponse).toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<AssetResponseDto> getAssetsByInspector(UUID inspectorId) {
+
+        UserEntity inspector = userEntityRepository.findById(inspectorId)
+                .orElseThrow(() ->
+                        new RuntimeException("Inspector not found with id: " + inspectorId));
+
+        List<AssetEntity> assets =
+                assetrepo.findByAssignedInspector_Id(inspectorId);
+
+        return assets.stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
     private ChildAssetResponseDto mapToAssetResponse(AssetEntity asset) {
 
         return ChildAssetResponseDto.builder().id(asset.getId()).name(asset.getName()).categoryId(asset.getCategoryId() != null ? asset.getCategoryId().getId() : null).parentAssetId(asset.getParentAsset() != null ? asset.getParentAsset().getId() : null).geometry(asset.getGeometry() != null ? geometryConverter.fromJtsGeometry(asset.getGeometry()) : null).status(asset.getStatus()).condition(asset.getCondition()).ward(asset.getWard()).installedDate(asset.getInstalledDate()).lastInspectionDate(asset.getLastInspectionDate()).build();
     }
+
+    @Override
+    @Transactional
+    public void assignAssetToInspector(UUID assetId, AssignAssetRequest request){
+        AssetEntity asset = assetrepo.findById(assetId)
+                .orElseThrow(()->
+                        new RuntimeException("Asset not found with id:" + assetId));
+        UserEntity inspector = userEntityRepository.findById(request.getInspectorId())
+                .orElseThrow(()->
+                        new RuntimeException("Inspector not found with id:" + request.getInspectorId()));
+        List<UserRoleEntity> userRoleEntities = userRoleRepository.findByUserId(inspector.getId());
+
+        boolean isInspector = userRoleEntities.stream()
+                        .anyMatch(userRoleEntity ->
+                                userRoleEntity.getRole() != null
+                                && "INSPECTOR".equalsIgnoreCase(
+                                        userRoleEntity.getRole().getRoleName()));
+        if (!isInspector){
+            throw new RuntimeException(
+                    "User " + inspector.getUserName()
+                            + "does not have INSPECTOR role");
+        }
+
+        asset.setAssignedInspector(inspector);
+        assetrepo.save(asset);
+
+    }
+
 
 }

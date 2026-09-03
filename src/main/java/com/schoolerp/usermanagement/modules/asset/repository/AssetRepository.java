@@ -72,4 +72,6 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID> {
                      @Param("sourceType") String sourceType,
                      @Param("sourceId") long sourceId);
 
+    List<AssetEntity> findByAssignedInspector_Id(UUID inspectorId);
+
 }
