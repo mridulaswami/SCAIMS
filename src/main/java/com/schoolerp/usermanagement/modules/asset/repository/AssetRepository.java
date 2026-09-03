@@ -93,4 +93,6 @@ List<AssetEntity> findAssetsByName(@Param("name") String name);
 
 
 
+    List<AssetEntity> findByAssignedInspector_Id(UUID inspectorId);
+
 }
