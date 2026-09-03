@@ -218,7 +218,7 @@ public class UserServiceImpl implements UserService {
         try {
             List<UserEntity> users = userRepository.findAll();
             log.info("users", users);
-            return users.stream().map(user -> CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build()).collect(Collectors.toList());
+            return users.stream().map(user -> CreateUserResponseDto.builder().phoneNumber(user.getPhone()).id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build()).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database");
         }
@@ -292,7 +292,7 @@ public class UserServiceImpl implements UserService {
             return usersByRoleId.stream().map(userRole -> {
                 UserEntity user = userRole.getUser();
 
-                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build();
+                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).phoneNumber(user.getPhone()).email(user.getEmail()).build();
             }).collect(Collectors.toList());
 
         } catch (Exception e) {
