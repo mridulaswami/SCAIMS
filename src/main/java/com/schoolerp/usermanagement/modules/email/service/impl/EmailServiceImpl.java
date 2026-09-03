@@ -3,8 +3,10 @@ package com.schoolerp.usermanagement.modules.email.service.impl;
 import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
 import com.schoolerp.usermanagement.modules.email.service.EmailService;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
@@ -22,6 +24,9 @@ public class EmailServiceImpl implements EmailService {
     private final JavaMailSender javaMailSender;
 
     private final TemplateEngine templateEngine;
+
+    @Value("${spring.mail.username}")
+    private String from;
 
     @Override
     @Async("emailTaskExecutor")
@@ -49,6 +54,11 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = javaMailSender.createMimeMessage();
 
             MimeMessageHelper helper = new MimeMessageHelper(message, true, StandardCharsets.UTF_8.name());
+
+            /*
+             * FROM
+             */
+            helper.setFrom(from, "SCAIMS");
 
             /*
              * TO
