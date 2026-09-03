@@ -28,50 +28,21 @@ public class DashboardService {
         long totalAssets = assetRepository.countAllAssets();
 
         // Open Work Orders
-        long openWorkOrders =
-                workOrderEntityRepository.countByStatusNot(
-                        WorkOrderEntity.Status.CLOSED
-                );
+        long openWorkOrders = workOrderEntityRepository.countByStatusNot(WorkOrderEntity.Status.CLOSED);
 
         // Open Complaints
-        long openComplaints =
-                complaintRepository.countByStatusNot(
-                        ComplaintEntity.Status.COMPLETED
-                );
+        long openComplaints = complaintRepository.countByStatusNot(ComplaintEntity.Status.COMPLETED);
 
         // Assets by Category
-        List<AssetCategoryResponse> assetsByCategory =
-                assetRepository.countAssetsByCategory()
-                        .stream()
-                        .map(row -> AssetCategoryResponse.builder()
-                                .category((String) row[0])
-                                .count((Long) row[1])
-                                .build())
-                        .toList();
+        List<AssetCategoryResponse> assetsByCategory = assetRepository.countAssetsByCategory().stream().map(row -> AssetCategoryResponse.builder().category((String) row[0]).count((Long) row[1]).build()).toList();
 
         // Assets by Condition
-        List<ConditionBreakdownResponse> conditionBreakdown =
-                assetRepository.countAssetsByCondition()
-                        .stream()
-                        .map(row -> ConditionBreakdownResponse.builder()
-                                .condition((String) row[0])
-                                .count((Long) row[1])
-                                .build())
-                        .toList();
+        List<ConditionBreakdownResponse> conditionBreakdown = assetRepository.countAssetsByCondition().stream().map(row -> ConditionBreakdownResponse.builder().condition((String) row[0]).count((Long) row[1]).build()).toList();
 
         // Dashboard Summary
-        DashboardSummaryResponse summary =
-                DashboardSummaryResponse.builder()
-                        .totalAsset(totalAssets)
-                        .openWorkOrders(openWorkOrders)
-                        .openComplaints(openComplaints)
-                        .build();
+        DashboardSummaryResponse summary = DashboardSummaryResponse.builder().totalAsset(totalAssets).openWorkOrders(openWorkOrders).openComplaints(openComplaints).build();
 
         // Final Dashboard Response
-        return DashboardResponse.builder()
-                .summary(summary)
-                .assetsByCategory(assetsByCategory)
-                .conditionBreakdown(conditionBreakdown)
-                .build();
+        return DashboardResponse.builder().summary(summary).assetsByCategory(assetsByCategory).conditionBreakdown(conditionBreakdown).build();
     }
 }
