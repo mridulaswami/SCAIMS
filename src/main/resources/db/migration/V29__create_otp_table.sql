@@ -1,0 +1,14 @@
+CREATE TABLE otps
+(
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+    email      VARCHAR(255) NOT NULL,
+
+    otp        VARCHAR(10) NOT NULL,
+
+    expired_at TIMESTAMP NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
