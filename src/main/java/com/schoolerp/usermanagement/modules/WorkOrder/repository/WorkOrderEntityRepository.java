@@ -19,6 +19,7 @@ public interface WorkOrderEntityRepository extends JpaRepository<WorkOrderEntity
             """)
     Optional<WorkOrderEntity> findByComplaintId(@Param("complaintId") UUID complaintId);
 
+    long countByStatusNot(WorkOrderEntity.Status status);
 
     List<WorkOrderEntity> findByInspectorId(UserEntity user);
 }
