@@ -1,6 +1,8 @@
 package com.schoolerp.usermanagement.modules.auth.repository;
 
 import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
+import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
+import org.apache.catalina.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -13,5 +15,7 @@ public interface UserRoleRepository extends JpaRepository<UserRoleEntity, UUID> 
     List<UserRoleEntity> findByUserId(UUID userId);
 
     List<UserRoleEntity> findByRoleId(Integer roleId);
+
+    UserRoleEntity findByUser(UserEntity user);
 
 }
