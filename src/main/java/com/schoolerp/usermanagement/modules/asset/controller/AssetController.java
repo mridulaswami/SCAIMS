@@ -12,6 +12,10 @@ import com.schoolerp.usermanagement.modules.asset.service.AssetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -85,11 +89,41 @@ public class AssetController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AssetResponseDto>>> getAssets(){
+    public ResponseEntity<ApiResponse<Page<AssetResponseDto>>> getAssets(
+            @PageableDefault (size = 5)
+            Pageable pageable){
 
-        List<AssetResponseDto> assets = assetService.getAllAssets();
+        Page<AssetResponseDto> assets = assetService.getAllAssets(pageable);
 
         return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully",assets));
     }
+
+    @GetMapping("/assetCategoryId/{id}")
+    public ResponseEntity<ApiResponse<Page<AssetResponseDto>>> getAssetByCategory(@PathVariable UUID id, @PageableDefault (size =5) Pageable pageable){
+
+        Page<AssetResponseDto> assets = assetService.getAssetsByCategory(id , pageable);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully for given category",assets));
+    }
+
+    @GetMapping("/name/search")
+    public ResponseEntity<ApiResponse<List<AssetResponseDto>>> getAssetByName(@RequestParam String name){
+
+        List<AssetResponseDto> assetList = assetService.getAssetsByName(name);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully of given name",assetList));
+
+    }
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<ApiResponse<AssetResponseDto>> getAssetsById(@PathVariable UUID id){
+
+        AssetResponseDto asset = assetService.getAssetsbyid(id);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got asset successfully for given id",asset));
+
+
+    }
+
 
 }

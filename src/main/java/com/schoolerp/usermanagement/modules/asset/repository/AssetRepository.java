@@ -2,7 +2,10 @@ package com.schoolerp.usermanagement.modules.asset.repository;
 
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.asset.entity.ParentAssetEntity;
+import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import feign.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +22,21 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID> {
             AND a.status = 'ACTIVE'
             """)
     List<AssetEntity> findByParentAssetId(@Param("parentAssetId") UUID parentAssetId);
+
+    @Query(value = """
+Select * from assets where category_id = :categoryId
+""",
+            countQuery = """
+        SELECT COUNT(1) FROM assets WHERE category_id = :categoryId
+        """,nativeQuery = true)
+    Page<AssetEntity> findByAssetCategoryId(@Param ("categoryId") UUID categoryId , Pageable pageable) ;
+
+@Query(value = """
+        SELECT * FROM assets a
+        WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))
+""" , nativeQuery = true)
+List<AssetEntity> findAssetsByName(@Param("name") String name);
+
 
 
     @Query(value = """
@@ -58,7 +76,7 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID> {
             """, nativeQuery = true)
     List<AssetEntity> findNearbyParentsWithChildren(@Param("longitude") double longitude, @Param("latitude") double latitude, @Param("radius") double radius);
 
-
+    Page<AssetEntity> findAll(Pageable pageable);
 
     @Modifying
     @Query(value = """
@@ -71,5 +89,8 @@ public interface AssetRepository extends JpaRepository<AssetEntity, UUID> {
                      @Param("wkt") String wkt,
                      @Param("sourceType") String sourceType,
                      @Param("sourceId") Long sourceId);
+
+
+
 
 }
