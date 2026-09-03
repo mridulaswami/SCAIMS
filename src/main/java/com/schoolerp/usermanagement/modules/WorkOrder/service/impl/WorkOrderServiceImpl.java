@@ -692,7 +692,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 .id(workOrder.getId())
 
-                .inspectorId(workOrder.getInspectorId() != null ? workOrder.getInspectorId().getId() : null)
+                .inspector(workOrder.getInspectorId() != null ? workOrder.getInspectorId() : null)
 
                 .priority(workOrder.getPriority() != null ? workOrder.getPriority().name() : null)
 

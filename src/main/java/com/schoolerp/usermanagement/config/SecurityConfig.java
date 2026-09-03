@@ -148,9 +148,19 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/forgetPassword").permitAll()
 
                         // -----------------------------------------
+                        // Register Send Opt APIs
+                        // -----------------------------------------
+                        .requestMatchers("/api/v1/users/register").permitAll()
+
+                        // -----------------------------------------
                         // User Create API
                         // -----------------------------------------
-                        .requestMatchers("/api/v1/users").permitAll()
+                        .requestMatchers("/api/v1/users/verify").permitAll()
+
+                        // -----------------------------------------
+                        // Change Passowrd API
+                        // -----------------------------------------
+                        .requestMatchers("/api/v1/users/changePassword").permitAll()
 
                         // -----------------------------------------
                         // Role APIs

@@ -28,6 +28,9 @@ spring:
           starttls:
             enable: true
 
+  opt:
+    exprired-at: 5
+
 server:
   port: 8003
   address: 0.0.0.0

@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.WorkOrder.responseDto;
 
+import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -43,7 +44,7 @@ public class GetAllWorkOrderGroupByStatusResponseDto {
     public static class WorkOrderResponseDto {
 
         private UUID id;
-        private UUID inspectorId;
+        private UserEntity inspector;
         private String priority;
         private String status;
         private String workReport;

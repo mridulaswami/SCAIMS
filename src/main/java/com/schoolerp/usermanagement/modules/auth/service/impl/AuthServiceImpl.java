@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.auth.service.impl;
 
+import com.schoolerp.usermanagement.common.util.PasswordGenerator;
 import com.schoolerp.usermanagement.modules.auth.entity.AuthEntity;
 import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
 import com.schoolerp.usermanagement.modules.auth.repository.AuthEntityRepository;
@@ -105,20 +106,13 @@ public class AuthServiceImpl implements AuthService {
             // 3. CHECK USER STATUS
             // =====================================================
 
-            /*
+
             if (!user.isStatus()) {
 
-                log.warn(
-                        "Login rejected - user inactive | userId={} | username={}",
-                        user.getId(),
-                        user.getUserName()
-                );
+                log.warn("Login rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
 
-                throw new RuntimeException(
-                        "User account is inactive"
-                );
+                throw new RuntimeException("User account is inactive");
             }
-            */
 
 
             // =====================================================
@@ -594,12 +588,12 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 5. Generate new password
-        String newPassword = generateRandomPassword();
-
+        String newPassword = PasswordGenerator.generateRandomPassword();
         log.info("New password generated successfully for userId={}", userEntity.getId());
 
         // 6. Encrypt and save password
         userEntity.setPassword(passwordEncoder.encode(newPassword));
+        userEntity.setStatus(false);
 
         userRepository.save(userEntity);
 
@@ -615,11 +609,4 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Forget Password completed successfully for userId={}", userEntity.getId());
     }
-
-
-    private String generateRandomPassword() {
-
-        return UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-    }
-
 }
