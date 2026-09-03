@@ -5,7 +5,10 @@ import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.ChildAssetResponseDto;
+import org.springframework.data.domain.Page;
 
+
+import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.UUID;
 
@@ -17,6 +20,12 @@ public interface AssetService {
 
     List<ChildAssetResponseDto> getChildAssets(UUID parentAssetId);
 
-    List<AssetResponseDto> getAllAssets();
+    Page<AssetResponseDto> getAllAssets(Pageable pageable);
+
+    Page<AssetResponseDto> getAssetsByCategory(UUID id , Pageable pageable);
+
+     AssetResponseDto getAssetsbyid(UUID id);
+
+     List<AssetResponseDto> getAssetsByName(String name);
 
 }

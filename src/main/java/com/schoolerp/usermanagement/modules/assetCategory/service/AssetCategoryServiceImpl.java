@@ -26,7 +26,7 @@ public class AssetCategoryServiceImpl implements AssetCategoryService{
 
         return assetCategoryList.stream().map(assetCategory -> {
 
-            return AssetCategoryResponseDto.builder().name(assetCategory.getName()).build();
+            return AssetCategoryResponseDto.builder().name(assetCategory.getName()).id(assetCategory.getId()).build();
         }).collect(Collectors.toList());
     }
 }
