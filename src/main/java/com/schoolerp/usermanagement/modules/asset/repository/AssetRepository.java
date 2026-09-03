@@ -92,4 +92,22 @@ List<AssetEntity> findAssetsByName(@Param("name") String name);
 
     List<AssetEntity> findByAssignedInspector_Id(UUID inspectorId);
 
+
+    @Query("SELECT COUNT(a) FROM AssetEntity a")
+    long countAllAssets();
+
+    @Query("""
+    SELECT a.categoryId.name, COUNT(a)
+    FROM AssetEntity a
+    GROUP BY a.categoryId.name
+    """)
+    List<Object[]> countAssetsByCategory();
+
+    @Query("""
+    SELECT a.condition, COUNT(a)
+    FROM AssetEntity a
+    GROUP BY a.condition
+    """)
+    List<Object[]> countAssetsByCondition();
+
 }

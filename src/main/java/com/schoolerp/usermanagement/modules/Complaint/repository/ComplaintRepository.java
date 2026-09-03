@@ -14,5 +14,5 @@ public interface ComplaintRepository extends JpaRepository<ComplaintEntity, UUID
 
     List<ComplaintEntity> findByCitizenId(Optional<UserEntity> citizenId);
 
-
+    long countByStatusNot(ComplaintEntity.Status status);
 }

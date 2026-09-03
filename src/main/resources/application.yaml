@@ -4,7 +4,6 @@ spring:
   application:
     name: USER-MANAGEMENT-SERVICE
 
-
   flyway:
     enabled: true
     locations: classpath:db/migration
