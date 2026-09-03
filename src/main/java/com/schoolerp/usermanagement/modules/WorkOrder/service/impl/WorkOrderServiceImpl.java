@@ -2,7 +2,9 @@ package com.schoolerp.usermanagement.modules.WorkOrder.service.impl;
 
 import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintEntity;
+import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintPhotosEntity;
 import com.schoolerp.usermanagement.modules.Complaint.repository.ComplaintRepository;
+import com.schoolerp.usermanagement.modules.Geometry.GeometryService;
 import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderEntity;
 import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderPhotoEntity;
 import com.schoolerp.usermanagement.modules.WorkOrder.repository.WorkOrderEntityRepository;
@@ -10,6 +12,7 @@ import com.schoolerp.usermanagement.modules.WorkOrder.repository.WorkOrderPhotoE
 import com.schoolerp.usermanagement.modules.WorkOrder.requestDto.CreateWorkOrderRequestDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.requestDto.StatusChangeRequestDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.CreateWorkOrderResponseDto;
+import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.GetAllWorkOrderGroupByStatusResponseDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.StatusChangeResponseDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.service.WorkOrderService;
 import com.schoolerp.usermanagement.modules.audit.Repository.ComplaintStatusAuditRepository;
@@ -18,6 +21,8 @@ import com.schoolerp.usermanagement.modules.audit.entity.ComplaintStatusAuditEnt
 import com.schoolerp.usermanagement.modules.audit.entity.WorkOrderStatusAuditEntity;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
+import com.schoolerp.usermanagement.security.JwtTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -29,14 +34,14 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.lang.invoke.StringConcatFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -49,6 +54,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private final WorkOrderPhotoEntityRepository workOrderPhotoEntityRepository;
     private final WorkOrderStatusAuditRepository workOrderStatusAuditRepository;
     private final ComplaintStatusAuditRepository complaintStatusAuditRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final GeometryService geometryService;
 
     @Override
     @Transactional
@@ -584,5 +591,200 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         // Return URL
         return "/uploads/workOrder/" + workOrderId + "/" + fileName;
     }
+
+
+    @Override
+    public List<GetAllWorkOrderGroupByStatusResponseDto> getAllWorkOrderGroupByStatus(String token) {
+
+        log.info("Fetching all Work Orders grouped by status started");
+
+        // =========================
+        // Token Validation
+        // =========================
+        if (token == null || token.isEmpty()) {
+            log.error("Access token is empty or null");
+            throw new RuntimeException("Invalid access token");
+        }
+
+        String role = jwtTokenProvider.getRoleFromJWT(token);
+
+        log.info("Logged in user role: {}", role);
+
+        List<WorkOrderEntity> workOrders;
+
+        // =========================
+        // ADMIN -> All Work Orders
+        // OTHER ROLE -> Own Work Orders
+        // =========================
+        if ("ADMIN".equalsIgnoreCase(role)) {
+
+            log.info("ADMIN user detected. Fetching all work orders");
+
+            workOrders = workOrderRepository.findAll();
+
+        } else {
+
+            String userId = jwtTokenProvider.getUserIdFromJWT(token);
+
+            log.info("Fetching work orders for inspector: {}", userId);
+
+            UUID userUUID;
+
+            try {
+                userUUID = UUID.fromString(userId);
+            } catch (IllegalArgumentException e) {
+                log.error("Invalid user UUID: {}", userId);
+                throw new RuntimeException("Invalid user id");
+            }
+
+            UserEntity user = userEntityRepository.findById(userUUID).orElseThrow(() -> new RuntimeException("User not found with id: " + userUUID));
+
+            workOrders = workOrderRepository.findByInspectorId(user);
+
+            log.info("Found {} work orders for inspector {}", workOrders.size(), userUUID);
+        }
+
+        // =========================
+        // Map Entity -> DTO
+        // =========================
+        List<GetAllWorkOrderGroupByStatusResponseDto.WorkOrderComplaintResponseDto> mappedWorkOrders = workOrders.stream().map(this::mapWorkOrder).toList();
+
+        // =========================
+        // Group By Status
+        // =========================
+        Map<String, List<GetAllWorkOrderGroupByStatusResponseDto.WorkOrderComplaintResponseDto>> groupedWorkOrders = mappedWorkOrders.stream().filter(item -> item.getWorkOrder() != null && item.getWorkOrder().getStatus() != null).collect(Collectors.groupingBy(item -> item.getWorkOrder().getStatus(), LinkedHashMap::new, Collectors.toList()));
+
+        // =========================
+        // ALL STATUS
+        // =========================
+        List<String> allStatuses = List.of("ASSIGNED", "IN_PROGRESS", "RESOLVED", "CLOSED");
+
+        // =========================
+        // Build Final Response
+        // =========================
+        List<GetAllWorkOrderGroupByStatusResponseDto> response = allStatuses.stream().map(status -> GetAllWorkOrderGroupByStatusResponseDto.builder().status(status).workOrders(groupedWorkOrders.getOrDefault(status, List.of())).build()).toList();
+
+        log.info("Work Orders grouped successfully. Total groups: {}", response.size());
+
+        return response;
+    }
+
+
+    /**
+     * Maps WorkOrderEntity to
+     * WorkOrder + Complaint response
+     */
+    private GetAllWorkOrderGroupByStatusResponseDto.WorkOrderComplaintResponseDto mapWorkOrder(WorkOrderEntity workOrder) {
+
+        log.debug("Mapping work order: {}", workOrder.getId());
+
+        // =========================
+        // Work Order Photos
+        // =========================
+        List<String> photos = workOrder.getPhotos() == null ? List.of() : workOrder.getPhotos().stream().map(WorkOrderPhotoEntity::getPhotoUrl).filter(Objects::nonNull).toList();
+
+        log.debug("Work order {} has {} photos", workOrder.getId(), photos.size());
+
+        // =========================
+        // Work Order DTO
+        // =========================
+        GetAllWorkOrderGroupByStatusResponseDto.WorkOrderResponseDto workOrderDto = GetAllWorkOrderGroupByStatusResponseDto.WorkOrderResponseDto.builder()
+
+                .id(workOrder.getId())
+
+                .inspectorId(workOrder.getInspectorId() != null ? workOrder.getInspectorId().getId() : null)
+
+                .priority(workOrder.getPriority() != null ? workOrder.getPriority().name() : null)
+
+                .status(workOrder.getStatus() != null ? workOrder.getStatus().name() : null)
+
+                .workReport(workOrder.getWorkReport())
+
+                .dueDate(workOrder.getDueDate())
+
+                .createdAt(workOrder.getCreatedAt())
+
+                .closedAt(workOrder.getClosedAt())
+
+                .photos(photos)
+
+                .build();
+
+        // =========================
+        // Complaint
+        // =========================
+        ComplaintEntity complaint = workOrder.getComplaintId();
+
+        GetAllWorkOrderGroupByStatusResponseDto.ComplaintResponseDto complaintDto = null;
+
+        if (complaint != null) {
+
+            log.debug("Mapping complaint {} for work order {}", complaint.getId(), workOrder.getId());
+
+            complaintDto = mapComplaint(complaint);
+        }
+
+        // =========================
+        // Final Response
+        // =========================
+        return GetAllWorkOrderGroupByStatusResponseDto.WorkOrderComplaintResponseDto.builder()
+
+                .workOrder(workOrderDto)
+
+                .complaint(complaintDto)
+
+                .build();
+    }
+
+
+    /**
+     * Maps ComplaintEntity to Complaint Response
+     */
+    private GetAllWorkOrderGroupByStatusResponseDto.ComplaintResponseDto mapComplaint(ComplaintEntity complaint) {
+
+        log.debug("Mapping complaint: {}", complaint.getId());
+
+        // =========================
+        // Complaint Photos
+        // =========================
+        List<String> complaintPhotos = List.of();
+
+        /*
+         * ComplaintPhotosEntity ka exact structure
+         * abhi available nahi hai.
+         *
+         * Isliye currently empty list rakhi gayi hai.
+         *
+         * Agar ComplaintPhotosEntity me photoUrl field hai
+         * to yahan mapping add kar sakte hain.
+         */
+
+        // =========================
+        // Complaint DTO
+        // =========================
+        return GetAllWorkOrderGroupByStatusResponseDto.ComplaintResponseDto.builder()
+
+                .id(complaint.getId())
+
+                .citizenId(complaint.getCitizenId() != null ? complaint.getCitizenId().getId() : null)
+
+                .title(complaint.getTitle())
+
+                .assetId(complaint.getAsset() != null ? complaint.getAsset().getId() : null)
+
+                .description(complaint.getDescription())
+
+                // IMPORTANT:
+                // Geometry ko directly JSON me serialize nahi karna.
+                // GeometryDto me convert karna hai.
+                .location(complaint.getLocation() != null ? geometryService.fromJtsGeometry(complaint.getLocation()) : null)
+
+                .status(complaint.getStatus() != null ? complaint.getStatus().name() : null)
+
+                .complaintPhotos(complaintPhotos)
+
+                .build();
+    }
 }
+
 

@@ -4,8 +4,11 @@ import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.WorkOrder.requestDto.CreateWorkOrderRequestDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.requestDto.StatusChangeRequestDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.CreateWorkOrderResponseDto;
+import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.GetAllWorkOrderGroupByStatusResponseDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.StatusChangeResponseDto;
 import com.schoolerp.usermanagement.modules.WorkOrder.service.WorkOrderService;
+import com.schoolerp.usermanagement.security.JwtTokenProvider;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +18,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -22,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class WorkOrderController {
 
     private final WorkOrderService workOrderService;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -44,4 +50,25 @@ public class WorkOrderController {
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "Work Order status changed successfully", response));
     }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','FIELD_ENGINEER')")
+    public ResponseEntity<ApiResponse<List<GetAllWorkOrderGroupByStatusResponseDto>>> getAllWorkOrderGroupByStatus(HttpServletRequest request) {
+
+        log.info("Get all Work Order started");
+
+        String token = jwtTokenProvider.extractAccestoken(request);
+
+        if (token == null || token.isEmpty()) {
+            log.warn("Token is empty or null");
+            throw new RuntimeException("Unauthorized: Token is missing");
+        }
+
+        List<GetAllWorkOrderGroupByStatusResponseDto> response = workOrderService.getAllWorkOrderGroupByStatus(token);
+
+        log.info("Get all Work Order completed. Total records: {}", response.size());
+
+        return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "Fetched All Work Order successfully", response));
+    }
+
 }

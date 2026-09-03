@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.WorkOrder.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,6 +22,7 @@ public class WorkOrderPhotoEntity {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "work_order_id")
     private WorkOrderEntity workOrderId;
