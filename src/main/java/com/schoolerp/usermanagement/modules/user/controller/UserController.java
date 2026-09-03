@@ -44,7 +44,7 @@ public class UserController {
 
             log.error("Create user API request failed | username={} | email={} | roleId={} | error={}", requestDto.getUserName(), requestDto.getEmail(), requestDto.getRoleId(), ex.getMessage(), ex);
 
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed to create user error {}" + ex.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed to create user error: " + ex.getMessage(), null));
         }
     }
 
@@ -101,7 +101,7 @@ public class UserController {
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) UUID roleId,@RequestParam(required = false) String search) {
+    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) Integer roleId, @RequestParam(required = false) String search) {
 
         List<CreateUserResponseDto> UsersData;
         try {

@@ -27,7 +27,7 @@ public class CreateUserRequestDto {
     private String name;
 
     @NotBlank
-    @Size(min = 10,max = 10)
+    @Size(min = 10, max = 10)
     private String phoneNumber;
 
     @NotBlank(message = "Email is required")
@@ -38,8 +38,8 @@ public class CreateUserRequestDto {
     @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
     private String password;
 
-    @NotNull(message = "Role is required")
-    private UUID roleId;
+    @Builder.Default
+    private Integer roleId = 2;
 
     @Builder.Default
     private boolean status = true;

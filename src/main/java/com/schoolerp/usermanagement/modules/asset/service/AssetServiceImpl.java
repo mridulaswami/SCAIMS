@@ -136,7 +136,7 @@ public class AssetServiceImpl implements AssetService {
 
         return AssetResponseDto.builder().id(asset.getId()).name(asset.getName())
 
-                .categoryId(asset.getCategoryId() != null ? asset.getCategoryId().getId() : null)
+                .categoryId(asset.getCategoryId() != null ? asset.getCategoryId().getId() : null).assetCategory(asset.getCategoryId())
 
                 .geometry(asset.getGeometry() != null ? geometryConverter.fromJtsGeometry(asset.getGeometry()) : null)
 
