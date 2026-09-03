@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -239,5 +240,26 @@ public class JwtTokenProvider {
         }
 
         return token;
+    }
+
+    public String extractAccestoken(HttpServletRequest request) {
+
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new RuntimeException("Authorization header not found");
+        }
+
+        if (!authorizationHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid Authorization header");
+        }
+
+        String refreshToken = authorizationHeader.substring(7).trim();
+
+        if (refreshToken.isBlank()) {
+            throw new RuntimeException("Refresh token not found");
+        }
+
+        return refreshToken;
     }
 }

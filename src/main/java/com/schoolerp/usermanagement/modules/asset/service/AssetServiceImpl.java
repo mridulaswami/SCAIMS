@@ -14,12 +14,17 @@ import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEn
 import com.schoolerp.usermanagement.modules.assetCategory.repository.AssetCategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.Point;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -176,6 +181,55 @@ public class AssetServiceImpl implements AssetService {
 
         return assets.stream().map(this::mapToAssetResponse).toList();
     }
+
+    @Override
+    public Page<AssetResponseDto> getAllAssets(Pageable pageable) {
+        Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<AssetEntity> assetList = assetrepo.findAll(unsortedPageable);
+
+        return assetList.map(asset ->
+
+             AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).categoryId(asset.getCategoryId().getId()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build());
+
+    }
+
+    @Override
+    public Page<AssetResponseDto> getAssetsByCategory(UUID id , Pageable pageable) {
+
+        AssetCategoryEntity assetCategory = assetCategoryRepo.findById(id).orElseThrow(() -> new RuntimeException("No Category found with this id"));
+
+        Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+
+        Page<AssetEntity> assetList = assetrepo.findByAssetCategoryId(assetCategory.getId() , unsortedPageable);
+
+        return assetList.map(asset ->
+
+             AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).categoryId(asset.getCategoryId().getId()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build());
+
+
+
+    }
+
+    @Override
+    public AssetResponseDto getAssetsbyid(UUID id) {
+
+        Optional<AssetEntity> assetData =  assetrepo.findById(id);
+
+          AssetEntity  asset = assetData.orElseThrow(()-> new RuntimeException("No Asset found with this id"));
+
+        return AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).categoryId(asset.getCategoryId().getId()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build();
+    }
+
+    @Override
+    public List<AssetResponseDto> getAssetsByName(String name) {
+
+        List<AssetEntity> assetList = assetrepo.findAssetsByName(name);
+
+        return assetList.stream().map(asset -> {
+
+            return AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).categoryId(asset.getCategoryId().getId()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build();
+        }).collect(Collectors.toList());    }
 
     private ChildAssetResponseDto mapToAssetResponse(AssetEntity asset) {
 

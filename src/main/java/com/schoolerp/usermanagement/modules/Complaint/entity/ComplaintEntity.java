@@ -56,6 +56,9 @@ public class ComplaintEntity {
     @OneToOne(mappedBy = "complaintId", fetch = FetchType.EAGER)
     private WorkOrderEntity workOrder;
 
+    @OneToMany(mappedBy = "complaint", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ComplaintPhotosEntity> complaintPhotos;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

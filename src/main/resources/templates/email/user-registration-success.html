@@ -6,33 +6,149 @@
     <title>Registration Successful</title>
 </head>
 
-<body>
+<body style="
+    margin:0;
+    padding:0;
+    background-color:#f4f6f8;
+    font-family:Arial, Helvetica, sans-serif;
+">
 
-<h2>Welcome to Smart City Managent!</h2>
+<div style="
+    max-width:600px;
+    margin:40px auto;
+    background:#ffffff;
+    padding:35px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+">
 
-<p>
-    Hello <strong th:text="${name}"></strong>,
-</p>
+    <!-- Header -->
+    <h2 style="
+        margin-top:0;
+        color:#222;
+        text-align:center;
+    ">
+        Welcome to Smart City Management!
+    </h2>
 
-<p>
-    Your registration has been completed successfully.
-</p>
+    <p style="
+        font-size:15px;
+        color:#444;
+    ">
+        Hello <strong th:text="${name}">User</strong>,
+    </p>
 
-<p>
-    Registered Email:
-    <strong th:text="${email}"></strong>
-</p>
+    <p style="
+        font-size:15px;
+        color:#444;
+        line-height:1.6;
+    ">
+        Your registration has been completed successfully.
+        Your account is now ready to use.
+    </p>
 
-<p>
-    You can now login to your School ERP account.
-</p>
+    <!-- Login Credentials -->
+    <div style="
+        background-color:#f8f9fa;
+        padding:20px;
+        border-radius:8px;
+        margin:25px 0;
+    ">
 
-<br>
+        <h3 style="
+            margin-top:0;
+            color:#222;
+        ">
+            Your Login Credentials
+        </h3>
 
-<p>
-    Regards,<br>
-    <strong>School ERP Team</strong>
-</p>
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Username:</strong>
+            <span th:text="${userName}">username</span>
+        </p>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Password:</strong>
+            <span th:text="${password}">password</span>
+        </p>
+
+        <p style="
+            font-size:14px;
+            color:#666;
+            margin-bottom:0;
+        ">
+            <strong>Role:</strong>
+            <span th:text="${role}">User</span>
+        </p>
+
+    </div>
+
+    <!-- Important Note -->
+    <div style="
+        background-color:#fff8e1;
+        border-left:4px solid #f0ad4e;
+        padding:15px;
+        margin:20px 0;
+        border-radius:5px;
+    ">
+
+        <p style="
+            margin:0;
+            font-size:14px;
+            color:#7a5a00;
+            line-height:1.5;
+        ">
+            <strong>Important:</strong>
+            This password is temporary. For security reasons,
+            you must change your password after your first login.
+        </p>
+
+    </div>
+
+    <p style="
+        font-size:15px;
+        color:#444;
+        line-height:1.6;
+    ">
+        You can now login to your School ERP account using the
+        above username and temporary password.
+    </p>
+
+    <p style="
+        font-size:14px;
+        color:#666;
+        line-height:1.5;
+    ">
+        Please keep your login credentials secure and do not
+        share them with anyone.
+    </p>
+
+    <hr style="
+        border:none;
+        border-top:1px solid #eeeeee;
+        margin:30px 0;
+    ">
+
+    <!-- Footer -->
+    <p style="
+        font-size:13px;
+        color:#888;
+        margin-bottom:0;
+        text-align:center;
+    ">
+        Regards,<br>
+        <strong>School ERP Team</strong>
+    </p>
+
+</div>
 
 </body>
 

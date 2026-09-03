@@ -1,12 +1,18 @@
 package com.schoolerp.usermanagement.modules.auth.service.impl;
 
+import com.schoolerp.usermanagement.common.util.PasswordGenerator;
 import com.schoolerp.usermanagement.modules.auth.entity.AuthEntity;
 import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
 import com.schoolerp.usermanagement.modules.auth.repository.AuthEntityRepository;
 import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
+import com.schoolerp.usermanagement.modules.auth.requestDto.ForgetPasswordRequestDto;
 import com.schoolerp.usermanagement.modules.auth.requestDto.LoginRequestDto;
 import com.schoolerp.usermanagement.modules.auth.responseDto.LoginResponseDto;
 import com.schoolerp.usermanagement.modules.auth.service.AuthService;
+import com.schoolerp.usermanagement.modules.email.constant.EmailSubjectConstant;
+import com.schoolerp.usermanagement.modules.email.constant.EmailTemplateConstant;
+import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
+import com.schoolerp.usermanagement.modules.email.service.EmailService;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
@@ -22,12 +28,16 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +49,8 @@ public class AuthServiceImpl implements AuthService {
     private final AuthEntityRepository authRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final UserRoleRepository userRoleRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     /*
      * Access Token Expiration
@@ -94,20 +106,13 @@ public class AuthServiceImpl implements AuthService {
             // 3. CHECK USER STATUS
             // =====================================================
 
-            /*
+
             if (!user.isStatus()) {
 
-                log.warn(
-                        "Login rejected - user inactive | userId={} | username={}",
-                        user.getId(),
-                        user.getUserName()
-                );
+                log.warn("Login rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
 
-                throw new RuntimeException(
-                        "User account is inactive"
-                );
+                throw new RuntimeException("User account is inactive");
             }
-            */
 
 
             // =====================================================
@@ -543,5 +548,65 @@ public class AuthServiceImpl implements AuthService {
         cookie.setMaxAge(0);
 
         response.addCookie(cookie);
+    }
+
+    public void forgetPassword(ForgetPasswordRequestDto request) {
+
+        // 1. Request validation
+        if (request == null || request.getUserName() == null || request.getUserName().trim().isEmpty()) {
+
+            log.warn("Forget Password failed: Username, Email or Phone Number is missing");
+
+            throw new IllegalArgumentException("Username, Email or Phone Number is required");
+        }
+
+        String providedValue = request.getUserName().trim();
+
+        log.info("Forget Password request received for identifier={}", providedValue);
+
+        // 2. Find user by Username / Email / Phone
+        Optional<UserEntity> userOptional = userRepository.findByUserNameOrEmailOrPhone(providedValue, providedValue, providedValue);
+
+        // 3. User not found
+        if (userOptional.isEmpty()) {
+
+            log.warn("Forget Password failed: No user found for identifier={}", providedValue);
+
+            throw new RuntimeException("User Not Found with Requested Email, UserName or Phone Number");
+        }
+
+        UserEntity userEntity = userOptional.get();
+
+        log.info("User found successfully. userId={}, userName={}", userEntity.getId(), userEntity.getUserName());
+
+        // 4. Validate user's email
+        if (userEntity.getEmail() == null || userEntity.getEmail().trim().isEmpty()) {
+
+            log.error("Forget Password failed: Email not configured for userId={}", userEntity.getId());
+
+            throw new RuntimeException("User Email is not configured");
+        }
+
+        // 5. Generate new password
+        String newPassword = PasswordGenerator.generateRandomPassword();
+        log.info("New password generated successfully for userId={}", userEntity.getId());
+
+        // 6. Encrypt and save password
+        userEntity.setPassword(passwordEncoder.encode(newPassword));
+        userEntity.setStatus(false);
+
+        userRepository.save(userEntity);
+
+        log.info("New password saved successfully for userId={}", userEntity.getId());
+
+        // 7. Prepare password reset email
+        EmailRequestDto email = EmailRequestDto.builder().to(userEntity.getEmail()).subject(EmailSubjectConstant.PASSWORD_RESET_SUCCESSFUL).variables(Map.of("userName", userEntity.getName(), "providedValue", providedValue, "newPassword", newPassword)).template(EmailTemplateConstant.FORGET_PASSOWRD).build();
+
+        // 8. Send email
+        emailService.sendEmail(email);
+
+        log.info("Password reset email sent successfully to userId={}, email={}", userEntity.getId(), userEntity.getEmail());
+
+        log.info("Forget Password completed successfully for userId={}", userEntity.getId());
     }
 }

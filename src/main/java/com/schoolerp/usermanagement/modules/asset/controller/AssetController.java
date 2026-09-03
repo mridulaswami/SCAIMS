@@ -3,6 +3,7 @@ package com.schoolerp.usermanagement.modules.asset.controller;
 
 import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
@@ -11,6 +12,10 @@ import com.schoolerp.usermanagement.modules.asset.service.AssetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +29,7 @@ import java.util.UUID;
 public class AssetController {
 
     private final AssetService assetService;
+    private final AssetRepository assetRepository;
 
     @PostMapping
     public ResponseEntity<ApiResponse<AssetCreateResponseDto>> createAsset(@Valid @RequestBody AssetrequestDto request) {
@@ -81,5 +87,43 @@ public class AssetController {
             return ResponseEntity.internalServerError().body(ApiResponse.of(false, "Failed to fetch child assets", null));
         }
     }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<AssetResponseDto>>> getAssets(
+            @PageableDefault (size = 5)
+            Pageable pageable){
+
+        Page<AssetResponseDto> assets = assetService.getAllAssets(pageable);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully",assets));
+    }
+
+    @GetMapping("/assetCategoryId/{id}")
+    public ResponseEntity<ApiResponse<Page<AssetResponseDto>>> getAssetByCategory(@PathVariable UUID id, @PageableDefault (size =5) Pageable pageable){
+
+        Page<AssetResponseDto> assets = assetService.getAssetsByCategory(id , pageable);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully for given category",assets));
+    }
+
+    @GetMapping("/name/search")
+    public ResponseEntity<ApiResponse<List<AssetResponseDto>>> getAssetByName(@RequestParam String name){
+
+        List<AssetResponseDto> assetList = assetService.getAssetsByName(name);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully of given name",assetList));
+
+    }
+
+    @GetMapping("/id/{id}")
+    public ResponseEntity<ApiResponse<AssetResponseDto>> getAssetsById(@PathVariable UUID id){
+
+        AssetResponseDto asset = assetService.getAssetsbyid(id);
+
+        return ResponseEntity.ok(ApiResponse.of(true,"Got asset successfully for given id",asset));
+
+
+    }
+
 
 }
