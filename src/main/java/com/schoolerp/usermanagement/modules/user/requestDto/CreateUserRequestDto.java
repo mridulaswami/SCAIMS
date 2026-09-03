@@ -34,16 +34,12 @@ public class CreateUserRequestDto {
     @Email(message = "Please provide a valid email address")
     private String email;
 
-    @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
-    private String password;
-
     @Builder.Default
     private Integer roleId = 2;
 
-    @Builder.Default
-    private boolean status = true;
-
     private String wardAssigned;
+
+    private Integer otp;
+
 
 }

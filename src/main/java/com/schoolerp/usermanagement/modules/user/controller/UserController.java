@@ -4,7 +4,9 @@ import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
 import com.schoolerp.usermanagement.modules.role.responsedto.RoleResponseDto;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
+import com.schoolerp.usermanagement.modules.user.requestDto.ChangePasswordRequestDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto;
+import com.schoolerp.usermanagement.modules.user.requestDto.SendOptRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
 import com.schoolerp.usermanagement.modules.user.service.UserService;
 import jakarta.validation.Valid;
@@ -26,7 +28,27 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody SendOptRequestDto requestDto) {
+
+        log.info("Register API request received  | email={}", requestDto.getEmail());
+
+        try {
+
+            userService.register(requestDto);
+
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "OTP sent successfully. Please verify your email.", null));
+
+        } catch (Exception ex) {
+
+            log.error("Register API failed | email={} | error={}", requestDto.getEmail(), ex.getMessage(), ex);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed to register user: " + ex.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/verify")
 //    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<CreateUserResponseDto>> createUser(@Valid @RequestBody CreateUserRequestDto requestDto) {
 
@@ -34,7 +56,7 @@ public class UserController {
 
         try {
 
-            CreateUserResponseDto response = userService.createUser(requestDto);
+            CreateUserResponseDto response = userService.verifyOtp(requestDto);
 
             log.info("Create user API request successful | username={} | email={}", requestDto.getUserName(), requestDto.getEmail());
 
@@ -45,6 +67,27 @@ public class UserController {
             log.error("Create user API request failed | username={} | email={} | roleId={} | error={}", requestDto.getUserName(), requestDto.getEmail(), requestDto.getRoleId(), ex.getMessage(), ex);
 
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed to create user error: " + ex.getMessage(), null));
+        }
+    }
+
+    @PostMapping("/changePassword")
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequestDto requestDto) {
+
+        log.info("Change password API request received | username={}", requestDto.getUserName());
+
+        try {
+
+            userService.changePassword(requestDto);
+
+            log.info("Change password API request successful | username={}", requestDto.getUserName());
+
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "Password Change Successfull", null));
+
+        } catch (Exception ex) {
+
+            log.error("Change password API request failed | username={} | error={}", requestDto.getUserName(), ex.getMessage(), ex);
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed Change Password error: " + ex.getMessage(), null));
         }
     }
 
