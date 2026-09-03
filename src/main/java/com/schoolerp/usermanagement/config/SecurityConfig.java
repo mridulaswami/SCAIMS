@@ -143,6 +143,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
 
                         // -----------------------------------------
+                        // Forget Password APIs
+                        // -----------------------------------------
+                        .requestMatchers("/api/v1/auth/forgetPassword").permitAll()
+
+                        // -----------------------------------------
                         // User Create API
                         // -----------------------------------------
                         .requestMatchers("/api/v1/users").permitAll()
