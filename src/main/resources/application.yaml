@@ -3,6 +3,10 @@ spring:
     name: USER-MANAGEMENT-SERVICE
 
 
+  profiles:
+    active: akash
+
+
   flyway:
     enabled: true
     locations: classpath:db/migration
