@@ -4,6 +4,7 @@ package com.schoolerp.usermanagement.modules.asset.controller;
 import com.schoolerp.usermanagement.common.response.ApiResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
+import com.schoolerp.usermanagement.modules.asset.requestDto.AssignAssetRequest;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
@@ -123,6 +124,24 @@ public class AssetController {
         return ResponseEntity.ok(ApiResponse.of(true,"Got asset successfully for given id",asset));
 
 
+    }
+
+    @PostMapping("/{assetId}/assign-inspector")
+    public ResponseEntity<String> assignAssetToInspector(
+            @PathVariable UUID assetId,
+            @RequestBody AssignAssetRequest request){
+        assetService.assignAssetToInspector(assetId,request);
+
+        return ResponseEntity.ok("Asset assigned to inspector successfully");
+    }
+
+    @GetMapping("/inspector/{inspectorId}")
+    public ResponseEntity<List<AssetResponseDto>> getAssetsByInspector(
+            @PathVariable UUID inspectorId) {
+
+        return ResponseEntity.ok(
+                assetService.getAssetsByInspector(inspectorId)
+        );
     }
 
 

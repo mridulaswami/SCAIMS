@@ -90,9 +90,6 @@ List<AssetEntity> findAssetsByName(@Param("name") String name);
                      @Param("sourceType") String sourceType,
                      @Param("sourceId") Long sourceId);
 
-
-
-
     List<AssetEntity> findByAssignedInspector_Id(UUID inspectorId);
 
 }
