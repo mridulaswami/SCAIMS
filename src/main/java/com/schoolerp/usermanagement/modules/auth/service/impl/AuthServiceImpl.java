@@ -593,7 +593,8 @@ public class AuthServiceImpl implements AuthService {
 
         // 6. Encrypt and save password
         userEntity.setPassword(passwordEncoder.encode(newPassword));
-        userEntity.setFirstTime(true);
+        userEntity.setStatus(false);
+
         userRepository.save(userEntity);
 
         log.info("New password saved successfully for userId={}", userEntity.getId());
@@ -608,4 +609,4 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Forget Password completed successfully for userId={}", userEntity.getId());
     }
-}git
+}
