@@ -32,8 +32,8 @@ public class UserEntity {
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name="phone_number", nullable=true, unique = true)
-    @Size(min = 10,max = 10)
+    @Column(name = "phone_number", nullable = true, unique = true)
+    @Size(min = 10, max = 10)
     private String phone;
 
     @Column(name = "email", nullable = false, unique = true)
@@ -45,6 +45,9 @@ public class UserEntity {
     @Column(name = "status", nullable = false)
     private boolean status = true;
 
+    @Column(name = "is_first_time", nullable = false)
+    private boolean isFirstTime = true;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -53,7 +56,7 @@ public class UserEntity {
     @Column(name = "updated_at", nullable = false, updatable = true)
     private LocalDateTime updatedAts;
 
-     private String wardAssigned;
+    private String wardAssigned;
 
 
 }
