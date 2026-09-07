@@ -141,10 +141,8 @@ public class UserServiceImpl implements UserService {
         // 9. Create User
         UserEntity user = UserEntity.builder().userName(requestDto.getUserName()).name(requestDto.getName()).phone(requestDto.getPhoneNumber()).email(requestDto.getEmail()).password(encodedPassword)
 
-                // User created but NOT active
-                .status(false)
-
-                .build();
+                // User created and active
+                .status(true).isFirstTime(true).build();
 
         UserEntity savedUser = userRepository.save(user);
 
@@ -205,7 +203,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
 
         // Activate user after password change
-        user.setStatus(true);
+        user.setFirstTime(false);
 
         userRepository.save(user);
 
