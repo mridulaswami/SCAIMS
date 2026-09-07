@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.Complaint.service;
 
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.Complaint.requestDto.CreateComplaintRequestDto;
 import com.schoolerp.usermanagement.modules.Complaint.responseDto.ComplaintResponseDto;
 import com.schoolerp.usermanagement.modules.Complaint.responseDto.GetAllComplaintsResponseDto;
@@ -13,7 +14,6 @@ public interface ComplaintService {
 
     ComplaintResponseDto createComplaint(CreateComplaintRequestDto request, UUID userId);
 
-    List<GetAllComplaintsResponseDto> getAllComplaints(String token);
-
+    PaginationResponse<List<GetAllComplaintsResponseDto>> getAllComplaints(String token, int page, int size);
 
 }

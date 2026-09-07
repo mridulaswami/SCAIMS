@@ -1,6 +1,7 @@
 package com.schoolerp.usermanagement.modules.Complaint.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintEntity;
 import com.schoolerp.usermanagement.modules.Complaint.entity.ComplaintPhotosEntity;
 import com.schoolerp.usermanagement.modules.Complaint.repository.ComplaintPhotosRepository;
@@ -23,6 +24,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.locationtech.jts.geom.Geometry;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.JsonNode;
@@ -227,9 +232,9 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public List<GetAllComplaintsResponseDto> getAllComplaints(String token) {
+    public PaginationResponse<List<GetAllComplaintsResponseDto>> getAllComplaints(String token, int page, int size) {
 
-        log.info("Started getting all complaints");
+        log.info("Started getting all complaints | page={} | size={}", page, size);
 
         String role = jwtTokenProvider.getRoleFromJWT(token);
         String userId = jwtTokenProvider.getUserIdFromJWT(token);
@@ -243,28 +248,35 @@ public class ComplaintServiceImpl implements ComplaintService {
         if (userId == null || userId.isBlank()) {
             throw new RuntimeException("User ID not found in token");
         }
+
         UUID userUuid = UUID.fromString(userId);
 
         Optional<UserEntity> userOptional = userEntityRepository.findById(userUuid);
 
-        List<ComplaintEntity> complaints;
+        if (userOptional.isEmpty()) {
+            throw new RuntimeException("User not found");
+        }
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<ComplaintEntity> complaintPage;
 
         if ("ADMIN".equalsIgnoreCase(role)) {
 
             log.debug("Admin user | Fetching all complaints");
 
-            complaints = complaintRepository.findAll();
+            complaintPage = complaintRepository.findAll(pageable);
 
         } else {
 
             log.debug("Citizen user | Fetching complaints | userId={}", userUuid);
 
-            complaints = complaintRepository.findByCitizenId(userOptional);
+            complaintPage = complaintRepository.findByCitizenId(userOptional.get(), pageable);
         }
 
-        log.info("Complaints fetched successfully | count={}", complaints.size());
+        log.info("Complaints fetched successfully | page={} | size={} | totalElements={}", page, size, complaintPage.getTotalElements());
 
-        return complaints.stream().map(complaint -> {
+        List<GetAllComplaintsResponseDto> response = complaintPage.getContent().stream().map(complaint -> {
 
             List<String> complaintPhotos = complaintPhotosRepository.findByComplaintId(complaint.getId()).stream().map(ComplaintPhotosEntity::getPhotoUrl).toList();
 
@@ -276,11 +288,12 @@ public class ComplaintServiceImpl implements ComplaintService {
 
                 List<String> workOrderPhotos = workOrder.getPhotos() != null ? workOrder.getPhotos().stream().map(WorkOrderPhotoEntity::getPhotoUrl).toList() : List.of();
 
-
                 workOrderDto = WorkOrderResponseDto.builder().id(workOrder.getId()).complaintId(workOrder.getComplaintId() != null ? workOrder.getComplaintId().getId() : null).inspectorId(workOrder.getInspectorId() != null ? workOrder.getInspectorId().getId() : null).priority(workOrder.getPriority() != null ? workOrder.getPriority().name() : null).status(workOrder.getStatus() != null ? workOrder.getStatus().name() : null).inspector(workOrder.getInspectorId()).workReport(workOrder.getWorkReport()).dueDate(workOrder.getDueDate()).createdAt(workOrder.getCreatedAt()).closedAt(workOrder.getClosedAt()).photos(workOrderPhotos).build();
             }
 
             return GetAllComplaintsResponseDto.builder().id(complaint.getId()).citizenId(complaint.getCitizenId() != null ? complaint.getCitizenId().getId() : null).assetId(complaint.getAsset() != null ? complaint.getAsset().getId() : null).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus() != null ? complaint.getStatus().name() : null).location(complaint.getLocation() != null ? geometryConverter.fromJtsGeometry(complaint.getLocation()) : null).photos(complaintPhotos).workOrder(workOrderDto).createdAt(complaint.getCreatedAt()).updatedAt(complaint.getUpdatedAt()).build();
         }).toList();
+
+        return new PaginationResponse<>(response, complaintPage.getTotalElements(), complaintPage.getNumber(), complaintPage.getSize());
     }
 }
