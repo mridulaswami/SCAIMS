@@ -1,6 +1,7 @@
 package com.schoolerp.usermanagement.modules.Complaint.controller;
 
 import com.schoolerp.usermanagement.common.response.ApiResponse;
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.Complaint.requestDto.CreateComplaintRequestDto;
 import com.schoolerp.usermanagement.modules.Complaint.responseDto.ComplaintResponseDto;
 import com.schoolerp.usermanagement.modules.Complaint.responseDto.GetAllComplaintsResponseDto;
@@ -50,21 +51,21 @@ public class ComplaintController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','CITIZEN')")
-    public ResponseEntity<ApiResponse<List<GetAllComplaintsResponseDto>>> getAllComplaints(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity<PaginationResponse<List<GetAllComplaintsResponseDto>>> getAllComplaints(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
 
-        log.info("Get all complaints API request received");
+        log.info("Get all complaints API request received | page={} | size={}", page, size);
 
         String token = "";
+
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             token = authorizationHeader.substring(7);
-            log.info("Token Found {}", token);
         }
 
-        List<GetAllComplaintsResponseDto> response = complaintService.getAllComplaints(token);
+        PaginationResponse<List<GetAllComplaintsResponseDto>> response = complaintService.getAllComplaints(token, page, size);
 
-        log.info("Get all complaints API completed successfully | count={}", response.size());
+        log.info("Get all complaints API completed successfully | page={} | size={} | totalElements={}", page, size, response.getTotalElements());
 
-        return ResponseEntity.ok(ApiResponse.of(true, "Complaints fetched successfully", response));
+        return ResponseEntity.ok(response);
     }
 
 

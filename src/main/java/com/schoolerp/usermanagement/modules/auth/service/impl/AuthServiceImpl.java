@@ -593,7 +593,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 6. Encrypt and save password
         userEntity.setPassword(passwordEncoder.encode(newPassword));
-        userEntity.setStatus(false);
+        userEntity.setFirstTime(true);
 
         userRepository.save(userEntity);
 
