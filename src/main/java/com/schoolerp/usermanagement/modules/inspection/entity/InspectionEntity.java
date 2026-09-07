@@ -1,6 +1,5 @@
 package com.schoolerp.usermanagement.modules.inspection.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import jakarta.persistence.*;
@@ -9,9 +8,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Geometry;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Table(name="inspection")
@@ -29,18 +29,24 @@ public class InspectionEntity {
     @JoinColumn(name = "asset_id")
     private AssetEntity assetId;
 
-    @ManyToOne
-    @JoinColumn(name= "inspector_user_id")
+    @OneToOne
+    @JoinColumn(name="inspector_user_id")
     private UserEntity inspectorUserId;
 
-    @Column(name= "notes")
+    @Column(name="condition_rating")
+    private String conditionRating;
+
+    @Column(name="notes")
     private String notes;
 
+    @Column(name="photo_url")
+    private String photoUrl;
+
     @CreationTimestamp
-    @Column(name= "inspected_at")
+    @Column(name="inspected_at")
     private LocalDateTime inspectedAt;
 
-    @Column(name = "geo_tag" , columnDefinition = "geometry(Point,4326)" , nullable = false)
-    private Point geoTag;
+    @Column(name="geo_tag" , columnDefinition = "geometry(Point,4326)")
+    private Geometry geoTag;
 
 }

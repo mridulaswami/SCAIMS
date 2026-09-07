@@ -1,7 +1,6 @@
 package com.schoolerp.usermanagement.modules.asset.service;
 
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
-import com.schoolerp.usermanagement.modules.asset.requestDto.AssignAssetRequest;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateResponseDto;
@@ -28,9 +27,5 @@ public interface AssetService {
      AssetResponseDto getAssetsbyid(UUID id);
 
      List<AssetResponseDto> getAssetsByName(String name);
-
-    void assignAssetToInspector(UUID asstId, AssignAssetRequest request);
-
-    List<AssetResponseDto> getAssetsByInspector(UUID inspectorId);
 
 }

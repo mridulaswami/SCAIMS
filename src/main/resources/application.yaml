@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: dimple
   application:
     name: USER-MANAGEMENT-SERVICE
 

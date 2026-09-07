@@ -5,7 +5,6 @@ import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
 import com.schoolerp.usermanagement.modules.role.responsedto.RoleResponseDto;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.requestDto.ChangePasswordRequestDto;
-import com.schoolerp.usermanagement.modules.user.requestDto.CreateFieldEngineerDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.SendOptRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
@@ -48,29 +47,6 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed to register user: " + ex.getMessage(), null));
         }
     }
-
-    @PostMapping("/registerFieldEngineer")
-    public ResponseEntity<ApiResponse<CreateUserResponseDto>> createFieldEngineer(@Valid @RequestBody CreateFieldEngineerDto requestDto) {
-
-        log.info("Create Field Engineer API request received | username={} | email={} | roleId={}", requestDto.getUserName(), requestDto.getEmail(), requestDto.getRoleId());
-
-        try {
-
-            CreateUserResponseDto response = userService.registerFieldEngineer(requestDto);
-
-            log.info("Create Field Engineer API request successful | username={} | email={}", requestDto.getUserName(), requestDto.getEmail());
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(true, "Field Engineer created successfully", response));
-
-        } catch (Exception ex) {
-
-            log.error("Create Field Engineer API request failed | username={} | email={} | roleId={} | error={}", requestDto.getUserName(), requestDto.getEmail(), requestDto.getRoleId(), ex.getMessage(), ex);
-
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.of(false, "Failed to create Field Engineer error: " + ex.getMessage(), null));
-        }
-    }
-
-
 
     @PostMapping("/verify")
 //    @PreAuthorize("hasRole('ADMIN')")
