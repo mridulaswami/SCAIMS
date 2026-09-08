@@ -167,6 +167,12 @@ public class SecurityConfig {
                         // -----------------------------------------
                         .requestMatchers("/api/v1/roles/**").permitAll()
 
+
+                        // -----------------------------------------
+                        // Upload Photos
+                        // -----------------------------------------
+                        .requestMatchers("/uploads/**").permitAll()
+
                         // -----------------------------------------
                         // All other API requires JWT
                         // -----------------------------------------

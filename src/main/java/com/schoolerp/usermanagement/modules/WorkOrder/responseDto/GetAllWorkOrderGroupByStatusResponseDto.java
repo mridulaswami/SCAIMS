@@ -1,5 +1,7 @@
 package com.schoolerp.usermanagement.modules.WorkOrder.responseDto;
 
+import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -68,13 +70,27 @@ public class GetAllWorkOrderGroupByStatusResponseDto {
         private UUID id;
         private UUID citizenId;
         private String title;
-        private UUID assetId;
+        private AssetResponseDto asset;
         private String description;
 
         private Object location;
 
         private String status;
 
-        private List<String> complaintPhotos;
+        private List<String> photos;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AssetResponseDto {
+
+        private UUID id;
+        private String name;
+        private String status;
+        private String condition;
+        private String ward;
+        private GeometryDto geometry;
     }
 }
