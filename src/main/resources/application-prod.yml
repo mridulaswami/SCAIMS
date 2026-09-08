@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/scaims_prod
+    url: jdbc:postgresql://localhost:5432/scaims_prod
     username: abhisingh
     password: Singh@123
     driver-class-name: org.postgresql.Driver
