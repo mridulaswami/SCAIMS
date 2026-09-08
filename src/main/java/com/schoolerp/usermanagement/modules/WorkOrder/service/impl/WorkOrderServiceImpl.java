@@ -747,17 +747,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         // =========================
         // Complaint Photos
         // =========================
-        List<String> complaintPhotos = List.of();
-
-        /*
-         * ComplaintPhotosEntity ka exact structure
-         * abhi available nahi hai.
-         *
-         * Isliye currently empty list rakhi gayi hai.
-         *
-         * Agar ComplaintPhotosEntity me photoUrl field hai
-         * to yahan mapping add kar sakte hain.
-         */
+        List<String> complaintPhotos = complaint.getComplaintPhotos().stream().map(photo -> photo.getPhotoUrl()).toList();
 
         // =========================
         // Complaint DTO
@@ -770,7 +760,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 .title(complaint.getTitle())
 
-                .assetId(complaint.getAsset() != null ? complaint.getAsset().getId() : null)
+                .asset(complaint.getAsset() != null ? GetAllWorkOrderGroupByStatusResponseDto.AssetResponseDto.builder().id(complaint.getAsset().getId()).name(complaint.getAsset().getName()).status(complaint.getAsset().getStatus()).condition(complaint.getAsset().getCondition()).ward(complaint.getAsset().getWard()).geometry(complaint.getAsset().getGeometry() != null ? geometryService.fromJtsGeometry(complaint.getAsset().getGeometry()) : null).build() : null)
 
                 .description(complaint.getDescription())
 
@@ -781,7 +771,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 .status(complaint.getStatus() != null ? complaint.getStatus().name() : null)
 
-                .complaintPhotos(complaintPhotos)
+                .photos(complaintPhotos)
 
                 .build();
     }
