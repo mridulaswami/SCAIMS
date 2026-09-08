@@ -14,6 +14,7 @@ import com.schoolerp.usermanagement.modules.role.repository.RoleEntityRepository
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.modules.user.requestDto.ChangePasswordRequestDto;
+import com.schoolerp.usermanagement.modules.user.requestDto.CreateFieldEngineerDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.SendOptRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
@@ -208,6 +209,53 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
 
         log.info("Password changed and user activated successfully | username={}", request.getUserName());
+    }
+
+    @Override
+    public CreateUserResponseDto registerFieldEngineer(CreateFieldEngineerDto request) {
+
+        if (userRepository.existsByUserName(request.getUserName())) {
+            throw new RuntimeException("Username already exists");
+        }
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+
+        if (userRepository.existsByPhone(request.getPhoneNumber())) {
+            throw new RuntimeException("Phone number already exists");
+        }
+
+        Integer roleId = request.getRoleId();
+
+        RoleEntity role = roleEntityRepository.findById(roleId).orElseThrow(() -> new RuntimeException("Role not found"));
+
+        String password = PasswordGenerator.generateRandomPassword();
+        String encodedPassword = passwordEncoder.encode(password);
+
+        UserEntity user = UserEntity.builder().userName(request.getUserName()).name(request.getName()).phone(request.getPhoneNumber()).email(request.getEmail()).password(encodedPassword)
+                .status(true).isFirstTime(true).build();
+
+        UserEntity savedUser = userRepository.save(user);
+
+        UserRoleEntity userRole = new UserRoleEntity();
+
+        userRole.setUser(savedUser);
+        userRole.setRole(role);
+
+        userRoleRepository.save(userRole);
+
+        EmailRequestDto emailRequest = EmailRequestDto.builder().to(savedUser.getEmail()).subject(EmailSubjectConstant.USER_REGISTRATION_SUCCESS).template(EmailTemplateConstant.USER_REGISTRATION_SUCCESS).variables(Map.of("name", savedUser.getName(), "email", savedUser.getEmail(), "userName", savedUser.getUserName(), "role", role.getRoleName(), "password", password)).build();
+
+        emailService.sendEmail(emailRequest);
+
+        log.info("Registration success email triggered | userId={} | email={}", savedUser.getId(), savedUser.getEmail());
+
+        return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(savedUser.getName()).phoneNumber(savedUser.getPhone()).email(savedUser.getEmail()).role(role).build();
+
+
+
     }
 
 
