@@ -10,7 +10,7 @@ spring:
 
   mail:
     username: abhinav.singh@jellyfishtechnologies.com
-    password: <your-existing-mail-password>
+    password: evjkcwytstpyzezo
 
 springdoc:
   swagger-ui:
