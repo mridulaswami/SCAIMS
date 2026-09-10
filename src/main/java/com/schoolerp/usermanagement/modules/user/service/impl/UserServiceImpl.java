@@ -267,7 +267,7 @@ public class UserServiceImpl implements UserService {
             return users.stream().map(user -> {
                 UserRoleEntity userRole = userRoleRepository.findByUser(user);
 
-                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).phoneNumber(user.getPhone()).role(userRole != null ? userRole.getRole() : null).build();
+                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).phoneNumber(user.getPhone()).status(user.isStatus()).createdAt(user.getCreatedAt()).role(userRole != null ? userRole.getRole() : null).build();
             }).collect(Collectors.toList());
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database");
@@ -278,8 +278,10 @@ public class UserServiceImpl implements UserService {
     public CreateUserResponseDto getUserById(UUID id) {
         try {
             Optional<UserEntity> userData = userRepository.findById(id);
+            List<String> role = roleEntityRepository.findRoleNameByUserId(id);
+
             UserEntity user = userData.orElseThrow(() -> new RuntimeException("Role not found"));
-            return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).build();
+            return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).roleName(role).status(user.isStatus()).createdAt(user.getCreatedAt()).phoneNumber(user.getPhone()).name(user.getName()).email(user.getEmail()).build();
         } catch (Exception e) {
             log.error("Error while getting user : {}", e.getMessage());
             throw new RuntimeException("Error while getting user" + e.getMessage());
@@ -311,6 +313,7 @@ public class UserServiceImpl implements UserService {
             getUserData.setUserName(updateRequest.getUserName());
             getUserData.setName(updateRequest.getName());
             getUserData.setEmail(updateRequest.getEmail());
+            getUserData.setStatus(updateRequest.isStatus());
 
             UserEntity updatedUser = userRepository.save(getUserData);
             log.info("User Updated successfully : {}", updatedUser);
