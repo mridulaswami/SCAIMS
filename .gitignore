@@ -34,3 +34,4 @@ build/
 
 ### Upload Folder ###
 app.log
+/uploads/
