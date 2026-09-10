@@ -33,4 +33,4 @@ build/
 .vscode/
 
 ### Upload Folder ###
-/uploads/app.log
+app.log
