@@ -41,5 +41,7 @@ public class CreateUserRequestDto {
 
     private Integer otp;
 
+    private boolean status;
+
 
 }
