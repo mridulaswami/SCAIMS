@@ -1,3 +1,6 @@
+server:
+  forward-headers-strategy: framework
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/scaims
@@ -9,3 +12,7 @@ spring:
     username: abhinav.singh@jellyfishtechnologies.com
     password: evjkcwytstpyzezo
 
+springdoc:
+  swagger-ui:
+    config-url: /api/dev/user-management-service/v3/api-docs/swagger-config
+    url: /api/dev/user-management-service/v3/api-docs
