@@ -29,17 +29,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
     public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService) {
+
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
     }
 
+    // =============================================================
+    // Public endpoints - JWT filter will be skipped
+    // =============================================================
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
 
-        String uri = request.getRequestURI();
+        String path = request.getServletPath();
 
-        return uri.endsWith("/api/v1/auth/login") || uri.endsWith("/api/v1/auth/refresh");
+        return path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/refresh") || path.equals("/api/v1/auth/forgetPassword")
+
+                || path.equals("/api/v1/users/register") || path.equals("/api/v1/users/verify") || path.equals("/api/v1/users/changePassword")
+
+                || path.startsWith("/api/v1/roles/")
+
+                || path.startsWith("/swagger-ui/") || path.equals("/swagger-ui.html") || path.startsWith("/v3/api-docs/")
+
+                || path.startsWith("/uploads/");
     }
+
+    // =============================================================
+    // JWT Authentication
+    // =============================================================
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -48,53 +65,72 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
 
-            // =========================================================
+            // =====================================================
             // 1. Get JWT from Authorization header
-            // =========================================================
+            // =====================================================
 
             String jwt = getJwtFromRequest(request);
 
             /*
-             * No JWT means this filter has nothing to authenticate.
-             * Spring Security will decide later whether the endpoint
-             * requires authentication or not.
+             * No JWT:
+             *
+             * Do NOT return 401 here.
+             *
+             * Let Spring Security decide whether this endpoint
+             * requires authentication.
              */
             if (!StringUtils.hasText(jwt)) {
+
                 filterChain.doFilter(request, response);
                 return;
             }
 
             log.debug("JWT authentication started | method={} | uri={}", request.getMethod(), requestUri);
 
-            // =========================================================
+            // =====================================================
             // 2. Validate JWT signature + expiration
-            // =========================================================
+            // =====================================================
 
             if (!tokenProvider.validateToken(jwt)) {
 
                 log.warn("JWT authentication failed - invalid or expired token | uri={}", requestUri);
 
-                sendUnauthorizedResponse(request, response, "Your session has expired or the token is invalid. Please log in again.");
+                SecurityContextHolder.clearContext();
 
+                /*
+                 * IMPORTANT:
+                 *
+                 * Do NOT send 401 here.
+                 *
+                 * Continue the filter chain.
+                 *
+                 * For permitAll() endpoints:
+                 *     request will be allowed.
+                 *
+                 * For authenticated() endpoints:
+                 *     Spring Security will return 401.
+                 */
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            // =========================================================
+            // =====================================================
             // 3. Make sure token is ACCESS token
-            // =========================================================
+            // =====================================================
 
             if (!tokenProvider.validateAccessToken(jwt)) {
 
                 log.warn("JWT authentication failed - token is not an ACCESS token | uri={}", requestUri);
 
-                sendUnauthorizedResponse(request, response, "Invalid access token.");
+                SecurityContextHolder.clearContext();
 
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            // =========================================================
+            // =====================================================
             // 4. Get username from JWT
-            // =========================================================
+            // =====================================================
 
             String username = tokenProvider.getUsernameFromJWT(jwt);
 
@@ -102,14 +138,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 log.warn("JWT authentication failed - username missing in token | uri={}", requestUri);
 
-                sendUnauthorizedResponse(request, response, "Invalid access token.");
+                SecurityContextHolder.clearContext();
 
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            // =========================================================
+            // =====================================================
             // 5. Load user from database
-            // =========================================================
+            // =====================================================
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
@@ -117,20 +154,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 log.warn("JWT authentication failed - user details not found | username={}", username);
 
-                sendUnauthorizedResponse(request, response, "User not found.");
+                SecurityContextHolder.clearContext();
 
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            // =========================================================
+            // =====================================================
             // 6. Get claims
-            // =========================================================
+            // =====================================================
 
             Claims claims = tokenProvider.getClaims(jwt);
 
-            // =========================================================
+            // =====================================================
             // 7. Get role from JWT
-            // =========================================================
+            // =====================================================
 
             String role = claims.get("role", String.class);
 
@@ -138,14 +176,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 log.warn("JWT authentication failed - role missing | username={}", username);
 
-                sendUnauthorizedResponse(request, response, "Invalid access token. Role information is missing.");
+                SecurityContextHolder.clearContext();
 
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            // =========================================================
+            // =====================================================
             // 8. Normalize role
-            // =========================================================
+            // =====================================================
 
             /*
              * JWT may contain:
@@ -153,7 +192,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
              * ADMIN
              * ROLE_ADMIN
              *
-             * We normalize both to:
+             * Convert both to:
              *
              * ROLE_ADMIN
              */
@@ -166,15 +205,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
 
-            // =========================================================
+            // =====================================================
             // 9. Create Authentication
-            // =========================================================
+            // =====================================================
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, Collections.singletonList(authority));
 
-            // =========================================================
+            // =====================================================
             // 10. Set Security Context
-            // =========================================================
+            // =====================================================
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
@@ -186,8 +225,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
 
-            sendUnauthorizedResponse(request, response, "User not found.");
-
+            filterChain.doFilter(request, response);
             return;
 
         } catch (JwtException | IllegalArgumentException ex) {
@@ -196,8 +234,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
 
-            sendUnauthorizedResponse(request, response, "Your session has expired or the token is invalid. Please log in again.");
-
+            filterChain.doFilter(request, response);
             return;
 
         } catch (Exception ex) {
@@ -206,8 +243,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
 
-            sendUnauthorizedResponse(request, response, "Authentication failed.");
-
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -232,27 +268,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return null;
-    }
-
-    // =============================================================
-    // Unauthorized Response
-    // =============================================================
-
-    private void sendUnauthorizedResponse(HttpServletRequest request, HttpServletResponse response, String message) throws IOException {
-
-        if (response.isCommitted()) {
-            return;
-        }
-
-        ErrorResponse errorResponse = new ErrorResponse(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized", message, request.getRequestURI());
-
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-
-        response.getWriter().write(mapper.writeValueAsString(errorResponse));
     }
 }
