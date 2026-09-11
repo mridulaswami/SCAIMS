@@ -2,6 +2,8 @@ package com.schoolerp.usermanagement.modules.user.repository;
 
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import feign.Param;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -24,4 +26,22 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
     boolean existsByPhone(String phone);
 
     Optional<UserEntity> findByUserNameOrEmailOrPhone(String userName, String email, String phone);
+
+    @Query("SELECT u FROM UserEntity u WHERE " +
+            "LOWER(u.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+            "u.phone LIKE CONCAT('%', :search, '%')")
+    Page<UserEntity> searchByNameOrEmailOrPhone(@Param("search") String search, Pageable pageable);
+
+    @Query("SELECT u FROM UserEntity u " +
+            "LEFT JOIN UserRoleEntity ur ON ur.user = u " +
+            "WHERE (:roleId IS NULL OR ur.role.id = :roleId) " +
+            "AND (:search IS NULL OR :search = '' OR " +
+            "     LOWER(u.userName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
+            "     LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
+            "     u.phone LIKE CONCAT('%', CAST(:search AS string), '%'))")
+    Page<UserEntity> findUsersFiltered(@Param("roleId") Integer roleId,
+                                       @Param("search") String search,
+                                       Pageable pageable);
+
 }

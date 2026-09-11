@@ -23,6 +23,10 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -212,6 +216,25 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Page<CreateUserResponseDto> searchUsers(String search, Pageable pageable) {
+        try {
+            Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+            Page<UserEntity> users = userRepository.searchByNameOrEmailOrPhone(search, unsortedPageable);
+            log.info("searched users {}", users);
+            List<CreateUserResponseDto> dtoList = users.stream().map(user ->
+            {
+                UserRoleEntity userRole = userRoleRepository.findByUser(user);
+
+                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).phoneNumber(user.getPhone()).status(user.isStatus()).createdAt(user.getCreatedAt()).role(userRole != null ? userRole.getRole() : null).build();
+
+            }).collect(Collectors.toList());
+            return new PageImpl<>(dtoList, unsortedPageable, users.getTotalElements());
+        } catch (Exception e) {
+            throw new RuntimeException("Error while getting users from database", e);
+        }
+    }
+
+    @Override
     public CreateUserResponseDto registerFieldEngineer(CreateFieldEngineerDto request) {
 
         if (userRepository.existsByUserName(request.getUserName())) {
@@ -255,20 +278,24 @@ public class UserServiceImpl implements UserService {
         return CreateUserResponseDto.builder().id(savedUser.getId()).userName(savedUser.getUserName()).name(savedUser.getName()).phoneNumber(savedUser.getPhone()).email(savedUser.getEmail()).role(role).build();
 
 
-
     }
 
 
     @Override
-    public List<CreateUserResponseDto> getUsers() {
+    public Page<CreateUserResponseDto> getUsers(Pageable pageable , Integer roleId, String search) {
         try {
-            List<UserEntity> users = userRepository.findAll();
-            log.info("users", users);
-            return users.stream().map(user -> {
-                UserRoleEntity userRole = userRoleRepository.findByUser(user);
+            Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+         //   Page<UserEntity> users = userRepository.findAll(unsortedPageable);
 
+            Page<UserEntity> users = userRepository.findUsersFiltered(roleId, search, unsortedPageable);
+
+            log.info("users", users);
+            List<CreateUserResponseDto> dtoList = users.stream().map(user -> {
+                UserRoleEntity userRole = userRoleRepository.findByUser(user);
                 return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).name(user.getName()).email(user.getEmail()).phoneNumber(user.getPhone()).status(user.isStatus()).createdAt(user.getCreatedAt()).role(userRole != null ? userRole.getRole() : null).build();
             }).collect(Collectors.toList());
+
+            return new PageImpl<>(dtoList, unsortedPageable, users.getTotalElements());
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database");
         }
@@ -336,18 +363,23 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    public List<CreateUserResponseDto> getUserByRole(Integer roleId) {
+    public Page<CreateUserResponseDto> getUserByRole(Integer roleId , Pageable pageable) {
         try {
-            List<UserRoleEntity> usersByRoleId = userRoleRepository.findByRoleId(roleId);
+            Page<UserRoleEntity> usersByRoleId = userRoleRepository.findByRoleId(roleId , pageable);
 
             System.out.println(usersByRoleId);
 
-            return usersByRoleId.stream().map(userRole -> {
+            return usersByRoleId.map(userRole -> {
                 UserEntity user = userRole.getUser();
-                UserRoleEntity userRoleEntity = userRoleRepository.findByUser(user);
-
-                return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).role(userRole.getRole()).name(user.getName()).phoneNumber(user.getPhone()).email(user.getEmail()).build();
-            }).collect(Collectors.toList());
+                return CreateUserResponseDto.builder()
+                        .id(user.getId())
+                        .userName(user.getUserName())
+                        .role(userRole.getRole())
+                        .name(user.getName())
+                        .phoneNumber(user.getPhone())
+                        .email(user.getEmail())
+                        .build();
+            });
 
         } catch (Exception e) {
             throw new RuntimeException("Error while getting users from database", e);

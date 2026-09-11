@@ -7,6 +7,8 @@ import com.schoolerp.usermanagement.modules.user.requestDto.CreateFieldEngineerD
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.SendOptRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -19,16 +21,18 @@ public interface UserService {
 
     void register(SendOptRequestDto requestDto);
 
-    public List<CreateUserResponseDto> getUsers();
+    public Page<CreateUserResponseDto> getUsers(Pageable pageable ,Integer roleId, String search);
     public CreateUserResponseDto getUserById(UUID id);
 
     public CreateUserResponseDto updatePasswordById(UUID id, CreateUserRequestDto request);
     public CreateUserResponseDto updateUserById( UUID id, CreateUserRequestDto roleRequestDto);
 
     public void deleteUserById( UUID id);
-    public List<CreateUserResponseDto> getUserByRole(Integer id);
+    public Page<CreateUserResponseDto> getUserByRole(Integer id , Pageable pageable);
 
     void changePassword(ChangePasswordRequestDto request);
+
+    public Page<CreateUserResponseDto> searchUsers(String search, Pageable pageable);
 
     public CreateUserResponseDto registerFieldEngineer(CreateFieldEngineerDto request);
 
