@@ -13,6 +13,9 @@ import com.schoolerp.usermanagement.modules.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -166,30 +169,21 @@ public class UserController {
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(required = false) Integer roleId, @RequestParam(required = false) String search) {
+    public ResponseEntity<ApiResponse<Page<CreateUserResponseDto>>> getUsers(@PageableDefault(size = 5)  Pageable pageable , @RequestParam(required = false) Integer roleId,
+                                                                             @RequestParam(required = false) String search) {
 
-        List<CreateUserResponseDto> UsersData;
         try {
-
-            if (roleId != null) {
-                UsersData = userService.getUserByRole(roleId);
-                System.out.println(UsersData);
-            } else {
-                UsersData = userService.getUsers();
-            }
-            log.info("UserData{}", UsersData);
-            if (!UsersData.isEmpty()) {
-                log.info("Got all the data from the User service");
-                return ResponseEntity.ok(new ApiResponse<>(true, "Data found", UsersData));
-            } else {
-                log.info("No Users data present");
-                throw new Exception("Users Data fetch failed");
-            }
+            Page<CreateUserResponseDto> usersData = userService.getUsers(pageable, roleId, search);
+            log.info("UserData {}", usersData);
+            String message = usersData.isEmpty() ? "No users found" : "Data found";
+            return ResponseEntity.ok(new ApiResponse<>(!usersData.isEmpty(), message, usersData));
         } catch (Exception e) {
-            log.error("Error occurred while fetching users", e.getMessage());
+            log.error("Error occurred while fetching users", e);
             throw new RuntimeException("Error occurred while fetching users");
         }
+
     }
+
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<CreateUserResponseDto>> getUserById(@PathVariable UUID id) {
