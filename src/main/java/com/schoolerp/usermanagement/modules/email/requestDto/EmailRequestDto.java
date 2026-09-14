@@ -23,6 +23,8 @@ public class EmailRequestDto {
     @Email
     private String to;
 
+    private List<@NotBlank @Email String> toList;
+
     private List<@Email(message = "Invalid CC email address") String> cc;
 
     private List<@Email(message = "Invalid BCC email address") String> bcc;

@@ -63,13 +63,19 @@ public class EmailServiceImpl implements EmailService {
             /*
              * TO
              */
-            helper.setTo(request.getTo());
+            if (request.getTo() != null && !request.getTo().isBlank()) {
+
+                helper.setTo(request.getTo());
+
+            } else if (request.getToList() != null && !request.getToList().isEmpty()) {
+
+                helper.setTo(request.getToList().toArray(new String[0]));
+            }
 
             /*
              * CC
              */
             if (request.getCc() != null && !request.getCc().isEmpty()) {
-
                 helper.setCc(request.getCc().toArray(new String[0]));
             }
 
@@ -77,10 +83,8 @@ public class EmailServiceImpl implements EmailService {
              * BCC
              */
             if (request.getBcc() != null && !request.getBcc().isEmpty()) {
-
                 helper.setBcc(request.getBcc().toArray(new String[0]));
             }
-
             /*
              * Subject
              */

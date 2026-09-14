@@ -18,6 +18,8 @@ public interface UserRoleRepository extends JpaRepository<UserRoleEntity, UUID> 
 
     Page<UserRoleEntity> findByRoleId(Integer roleId, Pageable pageable);
 
+    List<UserRoleEntity> findByRoleId(Integer roleId);
+
     UserRoleEntity findByUser(UserEntity user);
 
 }
