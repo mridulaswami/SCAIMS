@@ -117,7 +117,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<CreateUserResponseDto>> updateUser(@Valid @PathVariable UUID id, @RequestBody CreateUserRequestDto updateRequest) {
+    public ResponseEntity<ApiResponse<CreateUserResponseDto>> updateUser(@Valid @PathVariable UUID id, @RequestBody CreateFieldEngineerDto updateRequest) {
 
         log.info("Role Request DTO : {}", updateRequest);
         try {

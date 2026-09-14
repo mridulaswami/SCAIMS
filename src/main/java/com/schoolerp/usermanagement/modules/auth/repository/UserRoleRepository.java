@@ -22,4 +22,6 @@ public interface UserRoleRepository extends JpaRepository<UserRoleEntity, UUID> 
 
     UserRoleEntity findByUser(UserEntity user);
 
+    List<UserRoleEntity> findAllByUser(UserEntity user);
+
 }

@@ -25,7 +25,7 @@ public interface UserService {
     public CreateUserResponseDto getUserById(UUID id);
 
     public CreateUserResponseDto updatePasswordById(UUID id, CreateUserRequestDto request);
-    public CreateUserResponseDto updateUserById( UUID id, CreateUserRequestDto roleRequestDto);
+    public CreateUserResponseDto updateUserById( UUID id, CreateFieldEngineerDto roleRequestDto);
 
     public void deleteUserById( UUID id);
     public Page<CreateUserResponseDto> getUserByRole(Integer id , Pageable pageable);
