@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -30,8 +32,8 @@ public class CreateFieldEngineerDto {
     @Size(min = 10, max = 10)
     private String phoneNumber;
 
-    private Integer roleId;
+    private List<Integer> roleId;
 
-    private String status;
+    private Boolean status;
 
 }

@@ -6,7 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +28,7 @@ public class CreateUserResponseDto {
 
     private String email;
 
-    private RoleEntity role;
+    private List<RoleEntity> roles;
 
     private Boolean status;
 
@@ -37,4 +36,3 @@ public class CreateUserResponseDto {
 
     private String wardAssigned;
 }
-
