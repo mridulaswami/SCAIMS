@@ -17,12 +17,19 @@ import com.schoolerp.usermanagement.modules.WorkOrder.entity.WorkOrderPhotoEntit
 import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.WorkOrderResponseDto;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
+import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
+import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
+import com.schoolerp.usermanagement.modules.email.constant.EmailSubjectConstant;
+import com.schoolerp.usermanagement.modules.email.constant.EmailTemplateConstant;
+import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
+import com.schoolerp.usermanagement.modules.email.service.EmailService;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
 import org.locationtech.jts.geom.Geometry;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,15 +45,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ComplaintServiceImpl implements ComplaintService {
+    private final UserRoleRepository userRoleRepository;
 
     private final ComplaintRepository complaintRepository;
     private final UserEntityRepository userEntityRepository;
@@ -55,6 +60,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final GeometryService geometryConverter;
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
+    private final EmailService emailService;
 
     @Override
     @Transactional
@@ -200,7 +206,67 @@ public class ComplaintServiceImpl implements ComplaintService {
             log.debug("No photos received | complaintId={}", savedComplaint.getId());
         }
 
-        // Step 7: Create response
+        // Step 7: Prepare locations
+        String complaintLocation = String.valueOf(geometryConverter.fromJtsGeometry(savedComplaint.getLocation()));
+        String assetLocation = String.valueOf(geometryConverter.fromJtsGeometry(asset.getGeometry()));
+
+
+        // Step 8: Send Email Notification to Citizen
+        try {
+
+            Map<String, Object> citizenVariables = new HashMap<>();
+
+            citizenVariables.put("name", citizen.getName());
+            citizenVariables.put("complaintId", savedComplaint.getId());
+            citizenVariables.put("title", savedComplaint.getTitle());
+            citizenVariables.put("description", savedComplaint.getDescription());
+            citizenVariables.put("status", savedComplaint.getStatus());
+            citizenVariables.put("submittedAt", savedComplaint.getCreatedAt());
+            citizenVariables.put("complaintLocation", complaintLocation);
+            citizenVariables.put("assetName", asset.getName());
+            citizenVariables.put("assetLocation", assetLocation);
+
+            EmailRequestDto citizenEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.CITIZEN_COMPLAINT_SUBMITTED).template(EmailTemplateConstant.CITIZEN_COMPLAINT_SUBMITTED).variables(citizenVariables).build();
+
+            emailService.sendEmail(citizenEmail);
+
+        } catch (Exception e) {
+
+            log.error("Failed to send citizen complaint email | complaintId={}", savedComplaint.getId(), e);
+        }
+
+
+        // Step 9: Send Email Notification to Admin
+        try {
+
+            List<String> adminEmails = userRoleRepository.findByRoleId(1).stream().map(userRole -> userRole.getUser().getEmail()).filter(Objects::nonNull).filter(email -> !email.isBlank()).distinct().toList();
+
+            if (!adminEmails.isEmpty()) {
+
+                Map<String, Object> adminVariables = new HashMap<>();
+
+                adminVariables.put("complaintId", savedComplaint.getId());
+                adminVariables.put("title", savedComplaint.getTitle());
+                adminVariables.put("description", savedComplaint.getDescription());
+                adminVariables.put("status", savedComplaint.getStatus());
+                adminVariables.put("citizenName", citizen.getName());
+                adminVariables.put("citizenEmail", citizen.getEmail());
+                adminVariables.put("submittedAt", savedComplaint.getCreatedAt());
+                adminVariables.put("complaintLocation", complaintLocation);
+                adminVariables.put("assetName", asset.getName());
+                adminVariables.put("assetLocation", assetLocation);
+
+                EmailRequestDto adminComplaintEmail = EmailRequestDto.builder().toList(adminEmails).subject(EmailSubjectConstant.ADMIN_COMPLAINT_NOTIFICATION).template(EmailTemplateConstant.ADMIN_COMPLAINT_NOTIFICATION).variables(adminVariables).build();
+
+                emailService.sendEmail(adminComplaintEmail);
+            }
+
+        } catch (Exception e) {
+
+            log.error("Failed to send admin complaint notification | complaintId={}", savedComplaint.getId(), e);
+        }
+
+        // Step 10: Create response
         return ComplaintResponseDto.builder().title(savedComplaint.getTitle()).description(savedComplaint.getDescription()).build();
     }
 

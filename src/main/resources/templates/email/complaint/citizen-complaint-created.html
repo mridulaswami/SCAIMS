@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Complaint Submitted Successfully</title>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background-color:#f4f6f8;
+    font-family:Arial, Helvetica, sans-serif;
+">
+
+<div style="
+    max-width:600px;
+    margin:40px auto;
+    background:#ffffff;
+    padding:35px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+">
+
+    <!-- Header -->
+    <h2 style="
+        margin-top:0;
+        color:#222;
+        text-align:center;
+    ">
+        Complaint Submitted Successfully
+    </h2>
+
+    <p style="
+        font-size:15px;
+        color:#444;
+    ">
+        Hello <strong th:text="${name}">User</strong>,
+    </p>
+
+    <p style="
+        font-size:15px;
+        color:#444;
+        line-height:1.6;
+    ">
+        Your complaint has been successfully submitted to SCAIMS.
+        Our team will review your complaint and take the necessary
+        action.
+    </p>
+
+    <!-- Complaint Details -->
+    <div style="
+        background-color:#f8f9fa;
+        padding:20px;
+        border-radius:8px;
+        margin:25px 0;
+    ">
+
+        <h3 style="
+            margin-top:0;
+            color:#222;
+        ">
+            Complaint Details
+        </h3>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Complaint ID:</strong>
+            <span th:text="${complaintId}">COM-12345</span>
+        </p>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Title:</strong>
+            <span th:text="${title}">Streetlight Issue</span>
+        </p>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Description:</strong>
+            <span th:text="${description}">
+                Streetlight is not working.
+            </span>
+        </p>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Status:</strong>
+            <span th:text="${status}">SUBMITTED</span>
+        </p>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Submitted At:</strong>
+            <span th:text="${submittedAt}">
+                14 Sep 2026, 09:00 AM
+            </span>
+        </p>
+
+    </div>
+
+    <!-- Complaint Location -->
+    <div style="
+        background-color:#eef7ff;
+        padding:20px;
+        border-radius:8px;
+        margin:20px 0;
+    ">
+
+        <h3 style="
+            margin-top:0;
+            color:#222;
+        ">
+            Complaint Location
+        </h3>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Location:</strong>
+            <span th:text="${complaintLocation}">
+                28.6120, 77.2280
+            </span>
+        </p>
+
+    </div>
+
+    <!-- Asset Details -->
+    <div th:if="${assetName != null}" style="
+        background-color:#f8f9fa;
+        padding:20px;
+        border-radius:8px;
+        margin:20px 0;
+    ">
+
+        <h3 style="
+            margin-top:0;
+            color:#222;
+        ">
+            Related Asset
+        </h3>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Asset:</strong>
+            <span th:text="${assetName}">
+                Streetlight Pole 101
+            </span>
+        </p>
+
+        <p style="
+            font-size:15px;
+            color:#444;
+            margin:10px 0;
+        ">
+            <strong>Asset Location:</strong>
+            <span th:text="${assetLocation}">
+                28.6125, 77.2285
+            </span>
+        </p>
+
+    </div>
+
+    <!-- Important Note -->
+    <div style="
+        background-color:#fff8e1;
+        border-left:4px solid #f0ad4e;
+        padding:15px;
+        margin:20px 0;
+        border-radius:5px;
+    ">
+
+        <p style="
+            margin:0;
+            font-size:14px;
+            color:#7a5a00;
+            line-height:1.5;
+        ">
+            <strong>Note:</strong>
+            Please keep your Complaint ID for future reference.
+            You can use it to track the status of your complaint.
+        </p>
+
+    </div>
+
+    <p style="
+        font-size:15px;
+        color:#444;
+        line-height:1.6;
+    ">
+        Thank you for helping us improve city infrastructure
+        and services through SCAIMS.
+    </p>
+
+    <hr style="
+        border:none;
+        border-top:1px solid #eeeeee;
+        margin:30px 0;
+    ">
+
+    <!-- Footer -->
+    <p style="
+        font-size:13px;
+        color:#888;
+        margin-bottom:0;
+        text-align:center;
+    ">
+        Regards,<br>
+        <strong>SCAIMS Team</strong>
+    </p>
+
+</div>
+
+</body>
+</html>
