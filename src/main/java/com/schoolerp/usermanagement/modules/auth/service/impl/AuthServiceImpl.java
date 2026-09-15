@@ -13,6 +13,7 @@ import com.schoolerp.usermanagement.modules.email.constant.EmailSubjectConstant;
 import com.schoolerp.usermanagement.modules.email.constant.EmailTemplateConstant;
 import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
 import com.schoolerp.usermanagement.modules.email.service.EmailService;
+import com.schoolerp.usermanagement.modules.role.entity.RoleEntity;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
@@ -34,10 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -118,17 +116,22 @@ public class AuthServiceImpl implements AuthService {
             // =====================================================
             // 4. GET ROLE
             // =====================================================
-            UserRoleEntity userRole = userRoleRepository.findByUserId(user.getId()).stream().findFirst().orElseThrow(() -> new RuntimeException("Role not assigned to user"));
-            String role = userRole.getRole().getRoleName();
+            List<UserRoleEntity> userRoles = userRoleRepository.findByUserId(user.getId());
 
-            log.debug("User role loaded | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
+            if (userRoles == null || userRoles.isEmpty()) {
+                throw new RuntimeException("Role not assigned to user");
+            }
+
+            List<String> roles = userRoles.stream().map(UserRoleEntity::getRole).filter(Objects::nonNull).map(RoleEntity::getRoleName).toList();
+
+            log.debug("User role loaded | userId={} | username={} | role={}", user.getId(), user.getUserName(), roles);
 
 
             // =====================================================
             // 5. GENERATE ACCESS TOKEN
             // =====================================================
 
-            String accessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), user.getId(), role);
+            String accessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), user.getId(), roles);
 
 
             // =====================================================
@@ -193,7 +196,7 @@ public class AuthServiceImpl implements AuthService {
             // 12. LOGIN SUCCESS LOG
             // =====================================================
 
-            log.info("Login successful | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
+            log.info("Login successful | userId={} | username={} | role={}", user.getId(), user.getUserName(), roles);
 
 
             // =====================================================
@@ -309,15 +312,20 @@ public class AuthServiceImpl implements AuthService {
             // 7. GET ROLE
             // =====================================================
 
-            UserRoleEntity userRole = userRoleRepository.findByUserId(user.getId()).stream().findFirst().orElseThrow(() -> new RuntimeException("Role not assigned to user"));
-            String role = userRole.getRole().getRoleName();
+            List<UserRoleEntity> userRoles = userRoleRepository.findByUserId(user.getId());
+
+            if (userRoles == null || userRoles.isEmpty()) {
+                throw new RuntimeException("Role not assigned to user");
+            }
+
+            List<String> roles = userRoles.stream().map(UserRoleEntity::getRole).filter(Objects::nonNull).map(RoleEntity::getRoleName).toList();
 
 
             // =====================================================
             // 8. GENERATE NEW ACCESS TOKEN
             // =====================================================
 
-            String newAccessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), user.getId(), role);
+            String newAccessToken = jwtTokenProvider.generateAccessToken(user.getUserName(), user.getId(), roles);
 
 
             // =====================================================
@@ -384,7 +392,7 @@ public class AuthServiceImpl implements AuthService {
             // 15. SUCCESS LOG
             // =====================================================
 
-            log.info("Access and refresh tokens refreshed successfully | userId={} | username={} | role={}", user.getId(), user.getUserName(), role);
+            log.info("Access and refresh tokens refreshed successfully | userId={} | username={} | role={}", user.getId(), user.getUserName(), roles);
 
 
             // =====================================================
