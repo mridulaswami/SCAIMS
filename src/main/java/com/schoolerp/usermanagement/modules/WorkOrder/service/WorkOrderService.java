@@ -10,10 +10,11 @@ import com.schoolerp.usermanagement.modules.WorkOrder.responseDto.StatusChangeRe
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface WorkOrderService {
 
-    CreateWorkOrderResponseDto createWorkOrder(CreateWorkOrderRequestDto request);
+    CreateWorkOrderResponseDto createWorkOrder(CreateWorkOrderRequestDto request , UUID userId);
 
     StatusChangeResponseDto changeStatus(StatusChangeRequestDto requestDto);
 

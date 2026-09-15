@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>New Work Order Assigned</title>
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background-color:#f4f6f8;
+    font-family:Arial, Helvetica, sans-serif;
+">
+
+<div style="
+    max-width:600px;
+    margin:40px auto;
+    background:#ffffff;
+    padding:35px;
+    border-radius:10px;
+    box-shadow:0 2px 10px rgba(0,0,0,0.08);
+">
+
+    <!-- Header -->
+    <h2 style="
+        margin-top:0;
+        color:#222;
+        text-align:center;
+    ">
+        New Work Order Assigned
+    </h2>
+
+    <p style="
+        font-size:15px;
+        color:#444;
+    ">
+        Hello <strong th:text="${assignedTo}">Inspector</strong>,
+    </p>
+
+    <p style="
+        font-size:15px;
+        color:#444;
+        line-height:1.6;
+    ">
+        A work order has been assigned to you against the asset below.
+        Please review the details and proceed with the inspection.
+    </p>
+
+    <!-- Work Order Details -->
+    <div style="
+        background-color:#f8f9fa;
+        padding:20px;
+        border-radius:8px;
+        margin:25px 0;
+    ">
+
+        <h3 style="
+            margin-top:0;
+            color:#222;
+        ">
+            Work Order Details
+        </h3>
+
+        <p style="font-size:15px; color:#444; margin:10px 0;">
+            <strong>Work Order ID:</strong>
+            <span th:text="${workOrderId}">WO-10021</span>
+        </p>
+
+        <p style="font-size:15px; color:#444; margin:10px 0;">
+            <strong>Status:</strong>
+            <span th:text="${workOrderStatus}">ASSIGNED</span>
+        </p>
+
+        <p style="font-size:15px; color:#444; margin:10px 0;">
+            <strong>Assigned At:</strong>
+            <span th:text="${workOrderCreation}">14 Sep 2026, 09:00 AM</span>
+        </p>
+
+        <p style="font-size:15px; color:#444; margin:10px 0;">
+            <strong>Priority:</strong>
+            <span th:text="${priority}">14 Sep 2026, 09:00 AM</span>
+        </p>
+
+        <p style="font-size:15px; color:#444; margin:10px 0;">
+            <strong>Due Date:</strong>
+            <span th:text="${dueDate}">14 Sep 2026, 09:00 AM</span>
+        </p>
+
+    </div>
+
+    <!-- Asset Details -->
+    <div style="
+        background-color:#eef7ff;
+        padding:20px;
+        border-radius:8px;
+        margin:20px 0;
+    ">
+
+        <h3 style="
+            margin-top:0;
+            color:#222;
+        ">
+            Asset Details
+        </h3>
+
+        <p style="font-size:15px; color:#444; margin:10px 0;">
+            <strong>Asset Name:</strong>
+            <span th:text="${assetName}">Streetlight Pole 101</span>
+        </p>
+
+    </div>
+
+
+    <!-- View in app -->
+    <div style="text-align:center; margin:30px 0;">
+        <p style="font-size:15px; color:#444; margin-bottom:15px;">
+            View the asset location, complaint details, and work order timeline in the app.
+        </p>
+        <a th:href="${workOrderDetailsLink}"
+           style="
+                display:inline-block;
+                padding:12px 28px;
+                background:#2563eb;
+                color:#ffffff;
+                text-decoration:none;
+                border-radius:6px;
+                font-size:15px;
+                font-weight:bold;
+           ">
+            View Work Order
+        </a>
+    </div>
+
+    <p style="
+        font-size:14px;
+        color:#666;
+        line-height:1.5;
+    ">
+        This is an automated notification from SCAIMS.
+        Please do not reply directly to this email.
+    </p>
+
+    <hr style="border:none; border-top:1px solid #eeeeee; margin:30px 0;">
+
+    <!-- Footer -->
+    <p style="
+        font-size:13px;
+        color:#888;
+        margin-bottom:0;
+        text-align:center;
+    ">
+        Regards,<br>
+        <strong>SCAIMS Team</strong>
+    </p>
+
+</div>
+
+</body>
+</html>

@@ -19,6 +19,10 @@ import com.schoolerp.usermanagement.modules.audit.Repository.ComplaintStatusAudi
 import com.schoolerp.usermanagement.modules.audit.Repository.WorkOrderStatusAuditRepository;
 import com.schoolerp.usermanagement.modules.audit.entity.ComplaintStatusAuditEntity;
 import com.schoolerp.usermanagement.modules.audit.entity.WorkOrderStatusAuditEntity;
+import com.schoolerp.usermanagement.modules.email.constant.EmailSubjectConstant;
+import com.schoolerp.usermanagement.modules.email.constant.EmailTemplateConstant;
+import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
+import com.schoolerp.usermanagement.modules.email.service.EmailService;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
@@ -56,10 +60,13 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private final ComplaintStatusAuditRepository complaintStatusAuditRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final GeometryService geometryService;
+    private final GeometryService geometryConverter;
+    private final EmailService emailService;
+
 
     @Override
     @Transactional
-    public CreateWorkOrderResponseDto createWorkOrder(CreateWorkOrderRequestDto request) {
+    public CreateWorkOrderResponseDto createWorkOrder(CreateWorkOrderRequestDto request , UUID userId) {
 
         log.info("Started creating Work Order for complaintId: {}", request.getComplaintId());
 
@@ -73,6 +80,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         // 2. Fetch Complaint
         ComplaintEntity complaint = complaintRepository.findById(request.getComplaintId()).orElseThrow(() -> new RuntimeException("Complaint not found with id: " + request.getComplaintId()));
 
+        UserEntity citizen = userEntityRepository.findById(complaint.getCitizenId().getId()).orElseThrow(() -> new RuntimeException("Complaint not found with id: " + complaint.getCitizenId()));
+
         // 3. Fetch Inspector/User
         UserEntity inspector = userEntityRepository.findById(request.getInspectorId()).orElseThrow(() -> new RuntimeException("Inspector/User not found with id: " + request.getInspectorId()));
 
@@ -84,13 +93,108 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
         log.info("Work Order created successfully with id: {}", savedWorkOrder.getId());
 
-        // 6. Update Complaint Status
+        String complaintLocation = String.valueOf(geometryConverter.fromJtsGeometry(savedWorkOrder.getComplaintId().getLocation()));
+        String assetLocation = String.valueOf(geometryConverter.fromJtsGeometry(savedWorkOrder.getComplaintId().getAsset().getGeometry()));
+
+
+        //6. Email to admin for creating a work order.
+
+        try {
+            UserEntity admin = userEntityRepository.findById(userId).orElseThrow(() -> {
+                log.warn("Admin not found | citizenId={}", userId);
+                return new RuntimeException("Citizen not found with id: " + userId);
+            });
+
+
+                Map<String, Object> inspectorVariables = new HashMap<>();
+
+                inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId());
+                inspectorVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
+                inspectorVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
+                inspectorVariables.put("workOrderId", savedWorkOrder.getId());
+                inspectorVariables.put("assignedTo", inspector.getUserName());
+                inspectorVariables.put("priority", savedWorkOrder.getPriority());
+                inspectorVariables.put("dueDate", savedWorkOrder.getDueDate());
+                inspectorVariables.put("workOrderStatus", savedWorkOrder.getStatus());
+                inspectorVariables.put("citizenName", citizen.getUserName());
+                inspectorVariables.put("citizenEmail", citizen.getEmail());
+                inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
+                inspectorVariables.put("assetLocation", assetLocation);
+
+                EmailRequestDto adminWorkOrderEmail = EmailRequestDto.builder().to(admin.getEmail()).subject(EmailSubjectConstant.ADMIN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.ADMIN_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+
+                emailService.sendEmail(adminWorkOrderEmail);
+
+        } catch (Exception e) {
+
+            log.error("Failed to send admin workOrder email | workOrderId={}", savedWorkOrder.getId(), e);
+        }
+
+        // 7. Update Complaint Status
         complaint.setStatus(ComplaintEntity.Status.INPROGESS);
         complaintRepository.save(complaint);
 
         log.info("Complaint status updated to INPROGESS for complaintId: {}", complaint.getId());
 
-        // 7. Map Entity -> Response DTO
+        // 8. Email to Citizen for their Complaint Status change
+        try {
+
+            Map<String, Object> inspectorVariables = new HashMap<>();
+
+            inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId());
+            inspectorVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
+            inspectorVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
+            inspectorVariables.put("complaintStatus", complaint.getStatus());
+            inspectorVariables.put("workOrderId", savedWorkOrder.getId());
+            inspectorVariables.put("workOrderCreation", savedWorkOrder.getCreatedAt());
+            inspectorVariables.put("assignedTo", inspector.getUserName());
+            inspectorVariables.put("priority", savedWorkOrder.getPriority());
+            inspectorVariables.put("dueDate", savedWorkOrder.getDueDate());
+            inspectorVariables.put("workOrderStatus", savedWorkOrder.getStatus());
+            inspectorVariables.put("citizenName", citizen.getUserName());
+            inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
+            inspectorVariables.put("assetLocation", assetLocation);
+
+            EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+
+            emailService.sendEmail(citizenComplaintEmail);
+
+        } catch (Exception e) {
+
+            log.error("Failed to send Citizen workOrder email | workOrderId={}", savedWorkOrder.getId(), e);
+        }
+
+        // 9. Email to Field Engineer for WorkOrder Assignment
+
+        try {
+
+            Map<String, Object> inspectorVariables = new HashMap<>();
+
+            inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId());
+            inspectorVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
+            inspectorVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
+            inspectorVariables.put("complaintStatus", complaint.getStatus());
+            inspectorVariables.put("workOrderId", savedWorkOrder.getId());
+            inspectorVariables.put("workOrderCreation", savedWorkOrder.getCreatedAt());
+            inspectorVariables.put("assignedTo", inspector.getUserName());
+            inspectorVariables.put("priority", savedWorkOrder.getPriority());
+            inspectorVariables.put("dueDate", savedWorkOrder.getDueDate());
+            inspectorVariables.put("workOrderStatus", savedWorkOrder.getStatus());
+            inspectorVariables.put("citizenName", citizen.getUserName());
+            inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
+            inspectorVariables.put("assetLocation", assetLocation);
+
+            EmailRequestDto inspectorWordorderEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.INSPECTOR_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+
+            emailService.sendEmail(inspectorWordorderEmail);
+
+        } catch (Exception e) {
+
+            log.error("Failed to send Inspector workOrder email | workOrderId={}", savedWorkOrder.getId(), e);
+        }
+
+
+        // 10 . Map Entity -> Response DTO
         return CreateWorkOrderResponseDto.builder().id(savedWorkOrder.getId()).complaintId(savedWorkOrder.getComplaintId().getId()).inspectorId(savedWorkOrder.getInspectorId().getId()).priority(savedWorkOrder.getPriority()).status(savedWorkOrder.getStatus()).dueDate(savedWorkOrder.getDueDate()).createdAt(savedWorkOrder.getCreatedAt()).build();
     }
 

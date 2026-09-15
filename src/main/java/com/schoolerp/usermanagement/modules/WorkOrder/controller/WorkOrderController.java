@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @Slf4j
@@ -31,11 +32,14 @@ public class WorkOrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CreateWorkOrderResponseDto>> createWorkOrder(@Valid @RequestBody CreateWorkOrderRequestDto request) {
+    public ResponseEntity<ApiResponse<CreateWorkOrderResponseDto>> createWorkOrder(@Valid @ModelAttribute CreateWorkOrderRequestDto request , HttpServletRequest req) {
 
         log.info("Started creating Work Order with request: {}", request);
 
-        CreateWorkOrderResponseDto response = workOrderService.createWorkOrder(request);
+        String accestoken = extractRefreshToken(req);
+        UUID userId = UUID.fromString(jwtTokenProvider.getUserIdFromJWT(accestoken));
+
+        CreateWorkOrderResponseDto response = workOrderService.createWorkOrder(request , userId);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(true, "Work Order created successfully", response));
     }
@@ -69,6 +73,27 @@ public class WorkOrderController {
         log.info("Get all Work Order completed. Total records: {}", response.size());
 
         return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "Fetched All Work Order successfully", response));
+    }
+
+    private String extractRefreshToken(HttpServletRequest request) {
+
+        String authorizationHeader = request.getHeader("Authorization");
+
+        if (authorizationHeader == null || authorizationHeader.isBlank()) {
+            throw new RuntimeException("Authorization header not found");
+        }
+
+        if (!authorizationHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Invalid Authorization header");
+        }
+
+        String refreshToken = authorizationHeader.substring(7).trim();
+
+        if (refreshToken.isBlank()) {
+            throw new RuntimeException("Refresh token not found");
+        }
+
+        return refreshToken;
     }
 
 }
