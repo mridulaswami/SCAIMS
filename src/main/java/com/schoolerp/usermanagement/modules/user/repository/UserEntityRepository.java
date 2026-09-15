@@ -27,21 +27,40 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
 
     Optional<UserEntity> findByUserNameOrEmailOrPhone(String userName, String email, String phone);
 
-    @Query("SELECT u FROM UserEntity u WHERE " +
-            "LOWER(u.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
-            "u.phone LIKE CONCAT('%', :search, '%')")
+    @Query("SELECT u FROM UserEntity u WHERE " + "LOWER(u.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " + "LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%')) OR " + "u.phone LIKE CONCAT('%', :search, '%')")
     Page<UserEntity> searchByNameOrEmailOrPhone(@Param("search") String search, Pageable pageable);
 
-    @Query("SELECT u FROM UserEntity u " +
-            "LEFT JOIN UserRoleEntity ur ON ur.user = u " +
-            "WHERE (:roleId IS NULL OR ur.role.id = :roleId) " +
-            "AND (:search IS NULL OR :search = '' OR " +
-            "     LOWER(u.userName) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
-            "     LOWER(u.email) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')) OR " +
-            "     u.phone LIKE CONCAT('%', CAST(:search AS string), '%'))")
-    Page<UserEntity> findUsersFiltered(@Param("roleId") Integer roleId,
-                                       @Param("search") String search,
-                                       Pageable pageable);
+    @Query(value = """
+            SELECT DISTINCT u
+            FROM UserEntity u
+            LEFT JOIN UserRoleEntity ur ON ur.user = u
+            LEFT JOIN ur.role r
+            WHERE
+                (:roleId IS NULL OR r.id = :roleId)
+            AND
+                (
+                    :search IS NULL
+                    OR :search = ''
+                    OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%'))
+                )
+            """, countQuery = """
+            SELECT COUNT(DISTINCT u.id)
+            FROM UserEntity u
+            LEFT JOIN UserRoleEntity ur ON ur.user = u
+            LEFT JOIN ur.role r
+            WHERE
+                (:roleId IS NULL OR r.id = :roleId)
+            AND
+                (
+                    :search IS NULL
+                    OR :search = ''
+                    OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%'))
+                )
+            """)
+    Page<UserEntity> findUsersFiltered(@Param("roleId") Integer roleId, @Param("search") String search, Pageable pageable);
 
 }

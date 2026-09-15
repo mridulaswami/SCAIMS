@@ -1,6 +1,7 @@
 package com.schoolerp.usermanagement.modules.user.controller;
 
 import com.schoolerp.usermanagement.common.response.ApiResponse;
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
 import com.schoolerp.usermanagement.modules.role.responsedto.RoleResponseDto;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
@@ -168,20 +169,25 @@ public class UserController {
 
     }
 
-    @GetMapping()
-    public ResponseEntity<ApiResponse<Page<CreateUserResponseDto>>> getUsers(@PageableDefault(size = 5)  Pageable pageable , @RequestParam(required = false) Integer roleId,
-                                                                             @RequestParam(required = false) String search) {
+    @GetMapping
+    public ResponseEntity<PaginationResponse<List<CreateUserResponseDto>>> getUsers(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam(required = false) Integer roleId, @RequestParam(required = false) String search) {
 
         try {
-            Page<CreateUserResponseDto> usersData = userService.getUsers(pageable, roleId, search);
-            log.info("UserData {}", usersData);
-            String message = usersData.isEmpty() ? "No users found" : "Data found";
-            return ResponseEntity.ok(new ApiResponse<>(!usersData.isEmpty(), message, usersData));
-        } catch (Exception e) {
-            log.error("Error occurred while fetching users", e);
-            throw new RuntimeException("Error occurred while fetching users");
-        }
 
+            log.info("Get users API request received | page={} | size={} | roleId={} | search={}", page, size, roleId, search);
+
+            PaginationResponse<List<CreateUserResponseDto>> response = userService.getUsers(page, size, roleId, search);
+
+            log.info("Get users API completed | page={} | size={} | totalElements={}", page, size, response.getTotalElements());
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+
+            log.error("Error occurred while fetching users", e);
+
+            throw new RuntimeException("Error occurred while fetching users", e);
+        }
     }
 
 

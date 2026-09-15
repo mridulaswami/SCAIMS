@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.user.service.impl;
 
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.common.util.PasswordGenerator;
 import com.schoolerp.usermanagement.modules.auth.entity.OtpEntity;
 import com.schoolerp.usermanagement.modules.auth.entity.UserRoleEntity;
@@ -440,19 +441,21 @@ public class UserServiceImpl implements UserService {
     // =========================================================
 
     @Override
-    public Page<CreateUserResponseDto> getUsers(Pageable pageable, Integer roleId, String search) {
+    public PaginationResponse<List<CreateUserResponseDto>> getUsers(int page, int size, Integer roleId, String search) {
 
         try {
 
-            Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+            log.info("Started getting users | page={} | size={} | roleId={} | search={}", page, size, roleId, search);
 
-            Page<UserEntity> users = userRepository.findUsersFiltered(roleId, search, unsortedPageable);
+            Pageable pageable = PageRequest.of(page, size);
 
-            log.info("users {}", users);
+            Page<UserEntity> users = userRepository.findUsersFiltered(roleId, search, pageable);
 
-            List<CreateUserResponseDto> dtoList = users.stream().map(this::mapUserToResponse).collect(Collectors.toList());
+            log.info("Users fetched successfully | page={} | size={} | totalElements={}", users.getNumber(), users.getSize(), users.getTotalElements());
 
-            return new PageImpl<>(dtoList, unsortedPageable, users.getTotalElements());
+            List<CreateUserResponseDto> response = users.getContent().stream().map(this::mapUserToResponse).toList();
+
+            return new PaginationResponse<>(response, users.getTotalElements(), users.getNumber(), users.getSize());
 
         } catch (Exception e) {
 
@@ -461,7 +464,6 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Error while getting users from database", e);
         }
     }
-
 
     // =========================================================
     // GET USER BY ID
