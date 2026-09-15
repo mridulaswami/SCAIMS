@@ -14,7 +14,11 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -60,13 +64,13 @@ public class JwtTokenProvider {
     /**
      * Generate Access Token
      */
-    public String generateAccessToken(String username, UUID id, String role) {
+    public String generateAccessToken(String username, UUID id, List<String> roles) {
 
         Date now = new Date();
 
         Date expiryDate = new Date(now.getTime() + accessTokenExpirationMs);
 
-        return Jwts.builder().setSubject(username).claim("tokenType", "ACCESS").claim("userId", id).claim("role", role).setIssuedAt(now).setExpiration(expiryDate).signWith(signingKey, SignatureAlgorithm.HS256).compact();
+        return Jwts.builder().setSubject(username).claim("tokenType", "ACCESS").claim("userId", id.toString()).claim("role", roles).setIssuedAt(now).setExpiration(expiryDate).signWith(signingKey, SignatureAlgorithm.HS256).compact();
     }
 
     /**
@@ -88,7 +92,7 @@ public class JwtTokenProvider {
 
         token = removeBearerPrefix(token);
 
-        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+        Claims claims = getClaims(token);
 
         return claims.getSubject();
     }
@@ -100,7 +104,7 @@ public class JwtTokenProvider {
 
         token = removeBearerPrefix(token);
 
-        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+        Claims claims = getClaims(token);
 
         return claims.get("email", String.class);
     }
@@ -112,7 +116,7 @@ public class JwtTokenProvider {
 
         token = removeBearerPrefix(token);
 
-        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+        Claims claims = getClaims(token);
 
         return claims.get("phoneNumber", String.class);
     }
@@ -124,21 +128,86 @@ public class JwtTokenProvider {
 
         token = removeBearerPrefix(token);
 
-        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+        Claims claims = getClaims(token);
 
-        return claims.get("userId", String.class);
+        Object userId = claims.get("userId");
+
+        if (userId == null) {
+            return null;
+        }
+
+        return userId.toString();
     }
 
     /**
-     * Extract UserId
+     * Extract Roles from JWT
+     * <p>
+     * Supports:
+     * <p>
+     * New token:
+     * "role": ["ADMIN", "FIELD_ENGINEER"]
+     * <p>
+     * Old token:
+     * "role": "ADMIN"
      */
-    public String getRoleFromJWT(String token) {
+    public List<String> getRolesFromJWT(String token) {
 
         token = removeBearerPrefix(token);
 
-        Claims claims = Jwts.parser().setSigningKey(signingKey).build().parseClaimsJws(token).getBody();
+        Claims claims = getClaims(token);
 
-        return claims.get("role", String.class);
+        Object roleClaim = claims.get("role");
+
+        if (roleClaim == null) {
+            return Collections.emptyList();
+        }
+
+        /*
+         * Old JWT format:
+         *
+         * "role": "ADMIN"
+         */
+        if (roleClaim instanceof String role) {
+
+            if (role.isBlank()) {
+                return Collections.emptyList();
+            }
+
+            return Collections.singletonList(role);
+        }
+
+        /*
+         * New JWT format:
+         *
+         * "role": ["ADMIN", "FIELD_ENGINEER"]
+         */
+        if (roleClaim instanceof Collection<?> roles) {
+
+            return roles.stream().filter(Objects::nonNull).map(Object::toString).map(String::trim).filter(role -> !role.isBlank()).toList();
+        }
+
+        log.warn("Unexpected JWT role claim type: {}", roleClaim.getClass().getName());
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * Backward-compatible method.
+     * <p>
+     * If existing code is expecting a single role,
+     * this returns the first role from the JWT.
+     * <p>
+     * For new code, prefer getRolesFromJWT().
+     */
+    public String getRoleFromJWT(String token) {
+
+        List<String> roles = getRolesFromJWT(token);
+
+        if (roles.isEmpty()) {
+            return null;
+        }
+
+        return roles.get(0);
     }
 
     /**
@@ -242,24 +311,30 @@ public class JwtTokenProvider {
         return token;
     }
 
+    /**
+     * Extract Access Token from Authorization header
+     */
     public String extractAccestoken(HttpServletRequest request) {
 
         String authorizationHeader = request.getHeader("Authorization");
 
         if (authorizationHeader == null || authorizationHeader.isBlank()) {
+
             throw new RuntimeException("Authorization header not found");
         }
 
         if (!authorizationHeader.startsWith("Bearer ")) {
+
             throw new RuntimeException("Invalid Authorization header");
         }
 
-        String refreshToken = authorizationHeader.substring(7).trim();
+        String accessToken = authorizationHeader.substring(7).trim();
 
-        if (refreshToken.isBlank()) {
-            throw new RuntimeException("Refresh token not found");
+        if (accessToken.isBlank()) {
+
+            throw new RuntimeException("Access token not found");
         }
 
-        return refreshToken;
+        return accessToken;
     }
 }

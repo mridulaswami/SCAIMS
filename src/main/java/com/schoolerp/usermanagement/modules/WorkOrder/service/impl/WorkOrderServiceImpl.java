@@ -710,9 +710,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             throw new RuntimeException("Invalid access token");
         }
 
-        String role = jwtTokenProvider.getRoleFromJWT(token);
+        List<String> roles = jwtTokenProvider.getRolesFromJWT(token);
 
-        log.info("Logged in user role: {}", role);
+        log.info("Logged in user role: {}", roles);
 
         List<WorkOrderEntity> workOrders;
 
@@ -720,7 +720,10 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         // ADMIN -> All Work Orders
         // OTHER ROLE -> Own Work Orders
         // =========================
-        if ("ADMIN".equalsIgnoreCase(role)) {
+
+        boolean isAdmin = roles.stream().anyMatch(role -> "ADMIN".equalsIgnoreCase(role));
+        
+        if (isAdmin) {
 
             log.info("ADMIN user detected. Fetching all work orders");
 

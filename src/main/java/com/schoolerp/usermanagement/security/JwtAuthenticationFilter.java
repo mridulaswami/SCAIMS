@@ -1,7 +1,6 @@
 package com.schoolerp.usermanagement.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.schoolerp.usermanagement.common.response.ErrorResponse;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -20,18 +19,21 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.time.Instant;
+import java.util.*;
 
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
 
-    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService, ObjectMapper objectMapper) {
 
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
+        this.objectMapper = objectMapper;
     }
 
     // =============================================================
@@ -43,15 +45,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        return path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/refresh") || path.equals("/api/v1/auth/forgetPassword")
-
-                || path.equals("/api/v1/users/register") || path.equals("/api/v1/users/verify") || path.equals("/api/v1/users/changePassword")
-
-                || path.startsWith("/api/v1/roles/")
-
-                || path.startsWith("/swagger-ui/") || path.equals("/swagger-ui.html") || path.startsWith("/v3/api-docs/")
-
-                || path.startsWith("/uploads/");
+        return path.equals("/api/v1/auth/login") || path.equals("/api/v1/auth/refresh") || path.equals("/api/v1/auth/forgetPassword") || path.equals("/api/v1/users/register") || path.equals("/api/v1/users/verify") || path.equals("/api/v1/users/changePassword") || path.startsWith("/api/v1/roles/") || path.startsWith("/swagger-ui/") || path.equals("/swagger-ui.html") || path.startsWith("/v3/api-docs/") || path.startsWith("/uploads/");
     }
 
     // =============================================================
@@ -63,32 +57,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestUri = request.getRequestURI();
 
+        String jwt = getJwtFromRequest(request);
+
+        // No token
+        if (!StringUtils.hasText(jwt)) {
+
+            // Let Spring Security handle missing token
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
-
-            // =====================================================
-            // 1. Get JWT from Authorization header
-            // =====================================================
-
-            String jwt = getJwtFromRequest(request);
-
-            /*
-             * No JWT:
-             *
-             * Do NOT return 401 here.
-             *
-             * Let Spring Security decide whether this endpoint
-             * requires authentication.
-             */
-            if (!StringUtils.hasText(jwt)) {
-
-                filterChain.doFilter(request, response);
-                return;
-            }
 
             log.debug("JWT authentication started | method={} | uri={}", request.getMethod(), requestUri);
 
             // =====================================================
-            // 2. Validate JWT signature + expiration
+            // 1. Validate JWT
             // =====================================================
 
             if (!tokenProvider.validateToken(jwt)) {
@@ -97,127 +81,129 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.clearContext();
 
-                /*
-                 * IMPORTANT:
-                 *
-                 * Do NOT send 401 here.
-                 *
-                 * Continue the filter chain.
-                 *
-                 * For permitAll() endpoints:
-                 *     request will be allowed.
-                 *
-                 * For authenticated() endpoints:
-                 *     Spring Security will return 401.
-                 */
-                filterChain.doFilter(request, response);
+                sendUnauthorizedResponse(response, "Invalid or expired token");
+
                 return;
             }
 
             // =====================================================
-            // 3. Make sure token is ACCESS token
+            // 2. Validate ACCESS token
             // =====================================================
 
             if (!tokenProvider.validateAccessToken(jwt)) {
 
-                log.warn("JWT authentication failed - token is not an ACCESS token | uri={}", requestUri);
+                log.warn("JWT authentication failed - token is not ACCESS token | uri={}", requestUri);
 
                 SecurityContextHolder.clearContext();
 
-                filterChain.doFilter(request, response);
+                sendUnauthorizedResponse(response, "Invalid access token");
+
                 return;
             }
 
             // =====================================================
-            // 4. Get username from JWT
+            // 3. Get username
             // =====================================================
 
             String username = tokenProvider.getUsernameFromJWT(jwt);
 
             if (!StringUtils.hasText(username)) {
 
-                log.warn("JWT authentication failed - username missing in token | uri={}", requestUri);
+                log.warn("JWT authentication failed - username missing | uri={}", requestUri);
 
                 SecurityContextHolder.clearContext();
 
-                filterChain.doFilter(request, response);
+                sendUnauthorizedResponse(response, "Invalid token: username is missing");
+
                 return;
             }
 
             // =====================================================
-            // 5. Load user from database
+            // 4. Load user
             // =====================================================
 
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
             if (userDetails == null) {
 
-                log.warn("JWT authentication failed - user details not found | username={}", username);
+                log.warn("JWT authentication failed - user not found | username={}", username);
 
                 SecurityContextHolder.clearContext();
 
-                filterChain.doFilter(request, response);
+                sendUnauthorizedResponse(response, "User associated with token not found");
+
                 return;
             }
 
             // =====================================================
-            // 6. Get claims
+            // 5. Get claims
             // =====================================================
 
             Claims claims = tokenProvider.getClaims(jwt);
 
             // =====================================================
-            // 7. Get role from JWT
+            // 6. Get roles from JWT
             // =====================================================
 
-            String role = claims.get("role", String.class);
+            List<String> roles = extractRoles(claims);
 
-            if (!StringUtils.hasText(role)) {
+            if (roles.isEmpty()) {
 
-                log.warn("JWT authentication failed - role missing | username={}", username);
+                log.warn("JWT authentication failed - roles missing | username={}", username);
 
                 SecurityContextHolder.clearContext();
 
-                filterChain.doFilter(request, response);
+                sendUnauthorizedResponse(response, "Invalid token: role is missing");
+
                 return;
             }
 
             // =====================================================
-            // 8. Normalize role
+            // 7. Create authorities
             // =====================================================
 
-            /*
-             * JWT may contain:
-             *
-             * ADMIN
-             * ROLE_ADMIN
-             *
-             * Convert both to:
-             *
-             * ROLE_ADMIN
-             */
+            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
-            if (role.startsWith("ROLE_")) {
-                role = role.substring(5);
+            for (String role : roles) {
+
+                if (!StringUtils.hasText(role)) {
+                    continue;
+                }
+
+                role = role.trim();
+
+                if (role.startsWith("ROLE_")) {
+                    role = role.substring(5);
+                }
+
+                authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
             }
 
-            String authorityName = "ROLE_" + role;
+            if (authorities.isEmpty()) {
 
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
+                SecurityContextHolder.clearContext();
+
+                sendUnauthorizedResponse(response, "Invalid token: no valid role found");
+
+                return;
+            }
 
             // =====================================================
-            // 9. Create Authentication
+            // 8. Create Authentication
             // =====================================================
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, Collections.singletonList(authority));
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, authorities);
 
             // =====================================================
-            // 10. Set Security Context
+            // 9. Set Security Context
             // =====================================================
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            log.debug("JWT authentication successful | username={} | role={} | authority={}", username, role, authorityName);
+            log.debug("JWT authentication successful | username={} | roles={}", username, roles);
+
+            // Continue request
+            filterChain.doFilter(request, response);
 
         } catch (UsernameNotFoundException ex) {
 
@@ -225,8 +211,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
 
-            filterChain.doFilter(request, response);
-            return;
+            sendUnauthorizedResponse(response, "User associated with token not found");
 
         } catch (JwtException | IllegalArgumentException ex) {
 
@@ -234,8 +219,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
 
-            filterChain.doFilter(request, response);
-            return;
+            sendUnauthorizedResponse(response, "Invalid token");
 
         } catch (Exception ex) {
 
@@ -243,15 +227,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             SecurityContextHolder.clearContext();
 
-            filterChain.doFilter(request, response);
-            return;
+            sendUnauthorizedResponse(response, "Authentication failed: " + ex.getMessage());
+        }
+    }
+
+    // =============================================================
+    // Extract roles from JWT
+    // =============================================================
+
+    private List<String> extractRoles(Claims claims) {
+
+        Object roleClaim = claims.get("role");
+
+        if (roleClaim == null) {
+            return Collections.emptyList();
         }
 
-        // =========================================================
-        // Continue request
-        // =========================================================
+        // ---------------------------------------------------------
+        // Case 1: role is String
+        // ---------------------------------------------------------
 
-        filterChain.doFilter(request, response);
+        if (roleClaim instanceof String role) {
+
+            return Collections.singletonList(role);
+        }
+
+        // ---------------------------------------------------------
+        // Case 2: role is List
+        // ---------------------------------------------------------
+
+        if (roleClaim instanceof Collection<?> collection) {
+
+            return collection.stream().filter(String.class::isInstance).map(String.class::cast).toList();
+        }
+
+        return Collections.emptyList();
     }
 
     // =============================================================
@@ -268,5 +278,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return null;
+    }
+
+    // =============================================================
+// Send JWT Unauthorized Response
+// =============================================================
+
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+
+        if (response.isCommitted()) {
+            return;
+        }
+
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        Map<String, Object> errorResponse = new LinkedHashMap<>();
+
+        errorResponse.put("timestamp", Instant.now());
+        errorResponse.put("status", HttpServletResponse.SC_UNAUTHORIZED);
+        errorResponse.put("error", "Unauthorized");
+        errorResponse.put("message", message);
+
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
     }
 }
