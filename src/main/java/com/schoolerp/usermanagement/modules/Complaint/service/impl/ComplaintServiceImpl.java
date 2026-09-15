@@ -302,12 +302,13 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         log.info("Started getting all complaints | page={} | size={}", page, size);
 
-        String role = jwtTokenProvider.getRoleFromJWT(token);
+
+        List<String> roles = jwtTokenProvider.getRolesFromJWT(token);
         String userId = jwtTokenProvider.getUserIdFromJWT(token);
 
-        log.info("Fetched role={} | userId={}", role, userId);
+        log.info("Fetched role={} | userId={}", roles, userId);
 
-        if (role == null || role.isBlank()) {
+        if (roles.isEmpty()) {
             throw new RuntimeException("User role not found in token");
         }
 
@@ -327,7 +328,9 @@ public class ComplaintServiceImpl implements ComplaintService {
 
         Page<ComplaintEntity> complaintPage;
 
-        if ("ADMIN".equalsIgnoreCase(role)) {
+        boolean isAdmin = roles.stream().anyMatch(role -> "ADMIN".equalsIgnoreCase(role));
+
+        if (isAdmin) {
 
             log.debug("Admin user | Fetching all complaints");
 

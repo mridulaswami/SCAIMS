@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.user.service;
 
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.role.requestdto.RoleRequestDto;
 import com.schoolerp.usermanagement.modules.role.responsedto.RoleResponseDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.ChangePasswordRequestDto;
@@ -21,14 +22,17 @@ public interface UserService {
 
     void register(SendOptRequestDto requestDto);
 
-    public Page<CreateUserResponseDto> getUsers(Pageable pageable ,Integer roleId, String search);
+    PaginationResponse<List<CreateUserResponseDto>> getUsers(int page, int size, Integer roleId, String search);
+
     public CreateUserResponseDto getUserById(UUID id);
 
     public CreateUserResponseDto updatePasswordById(UUID id, CreateUserRequestDto request);
-    public CreateUserResponseDto updateUserById( UUID id, CreateFieldEngineerDto roleRequestDto);
 
-    public void deleteUserById( UUID id);
-    public Page<CreateUserResponseDto> getUserByRole(Integer id , Pageable pageable);
+    public CreateUserResponseDto updateUserById(UUID id, CreateFieldEngineerDto roleRequestDto);
+
+    public void deleteUserById(UUID id);
+
+    public Page<CreateUserResponseDto> getUserByRole(Integer id, Pageable pageable);
 
     void changePassword(ChangePasswordRequestDto request);
 
