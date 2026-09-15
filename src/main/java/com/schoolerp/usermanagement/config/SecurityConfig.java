@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.schoolerp.usermanagement.security.JwtAccessDeniedHandler;
 import com.schoolerp.usermanagement.security.JwtAuthenticationEntryPoint;
 import com.schoolerp.usermanagement.security.JwtAuthenticationFilter;
@@ -25,11 +26,13 @@ public class SecurityConfig {
 
     private final JwtTokenProvider tokenProvider;
     private final UserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
 
-    public SecurityConfig(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService) {
+    public SecurityConfig(JwtTokenProvider tokenProvider, UserDetailsService userDetailsService, ObjectMapper objectMapper) {
 
         this.tokenProvider = tokenProvider;
         this.userDetailsService = userDetailsService;
+        this.objectMapper = objectMapper;
     }
 
     // =========================================================
@@ -39,7 +42,7 @@ public class SecurityConfig {
     @Bean
     public JwtAuthenticationFilter jwtAuthenticationFilter() {
 
-        return new JwtAuthenticationFilter(tokenProvider, userDetailsService);
+        return new JwtAuthenticationFilter(tokenProvider, userDetailsService, objectMapper);
     }
 
     // =========================================================
@@ -94,100 +97,118 @@ public class SecurityConfig {
                 // =================================================
                 // CSRF
                 // =================================================
+
                 .csrf(csrf -> csrf.disable())
 
                 // =================================================
                 // CORS
-                // Uses CorsConfigurationSource bean
                 // =================================================
+
                 .cors(Customizer.withDefaults())
 
                 // =================================================
                 // EXCEPTION HANDLING
                 // =================================================
+
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint()).accessDeniedHandler(accessDeniedHandler()))
 
                 // =================================================
                 // STATELESS SESSION
                 // =================================================
+
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 // =================================================
                 // AUTHORIZATION
                 // =================================================
+
                 .authorizeHttpRequests(auth -> auth
 
                         // -----------------------------------------
                         // CORS Preflight
                         // -----------------------------------------
+
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
 
                         // -----------------------------------------
                         // Swagger
                         // -----------------------------------------
+
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                         // -----------------------------------------
                         // Actuator
                         // -----------------------------------------
+
                         .requestMatchers("/actuator/**").permitAll()
 
                         // -----------------------------------------
-                        // Authentication APIs
+                        // Login
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/auth/login").permitAll()
 
                         // -----------------------------------------
-                        // Authentication APIs
+                        // Refresh Token
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/auth/refresh").permitAll()
 
                         // -----------------------------------------
-                        // Forget Password APIs
+                        // Forget Password
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/auth/forgetPassword").permitAll()
 
                         // -----------------------------------------
-                        // Register Send Opt APIs
+                        // Register
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/users/register").permitAll()
 
                         // -----------------------------------------
-                        // User Create API
+                        // Verify OTP
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/users/verify").permitAll()
 
                         // -----------------------------------------
-                        // Change Passowrd API
+                        // Change Password
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/users/changePassword").permitAll()
 
                         // -----------------------------------------
-                        // Role APIs
+                        // Roles
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/roles/**").permitAll()
 
+                        // -----------------------------------------
+                        // Uploaded Files
+                        // -----------------------------------------
 
-                        // -----------------------------------------
-                        // Upload Photos
-                        // -----------------------------------------
                         .requestMatchers("/uploads/**").permitAll()
 
                         // -----------------------------------------
-                        // All other API requires JWT
+                        // All API v1 requires authentication
                         // -----------------------------------------
+
                         .requestMatchers("/api/v1/**").authenticated()
 
                         // -----------------------------------------
                         // Everything else
                         // -----------------------------------------
+
                         .anyRequest().authenticated())
 
                 // =================================================
                 // JWT FILTER
                 // =================================================
+
                 .addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 }
+
