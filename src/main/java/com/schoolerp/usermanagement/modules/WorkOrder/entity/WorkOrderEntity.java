@@ -38,6 +38,10 @@ public class WorkOrderEntity {
     @JoinColumn(name = "user_id")
     private UserEntity inspectorId;
 
+    @ManyToOne
+    @JoinColumn(name = "created_by")
+    private UserEntity createdBy;
+
     @Column(name = "priority")
     @Enumerated(EnumType.STRING)
     private Priority priority;
@@ -48,6 +52,9 @@ public class WorkOrderEntity {
 
     @Column(name = "work_report", nullable = true)
     private String workReport;
+
+    @Column(name = "rejection_reason", nullable = true)
+    private String rejectionReason;
 
     @CreationTimestamp
     @Column(name = "due_date")
