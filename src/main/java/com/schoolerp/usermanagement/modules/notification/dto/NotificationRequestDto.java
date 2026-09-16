@@ -17,25 +17,14 @@ import java.util.UUID;
 @AllArgsConstructor
 public class NotificationRequestDto {
 
-    // Single recipient
     private UUID recipientId;
-
-    // Multiple recipients (similar to toList in EmailRequestDto)
     private List<UUID> recipientIds;
-
-    // Actor who triggered the notification (optional)
     private UUID actorId;
-
     private String title;
-
     private String message;
-
     private NotificationType type;
-
     @Builder.Default
     private NotificationPriority priority = NotificationPriority.MEDIUM;
-
     private TargetType targetType;
-
     private String targetId;
 }
