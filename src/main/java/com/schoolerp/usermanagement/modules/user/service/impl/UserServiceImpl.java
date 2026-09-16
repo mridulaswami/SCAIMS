@@ -477,11 +477,11 @@ public class UserServiceImpl implements UserService {
 
             Optional<UserEntity> userData = userRepository.findById(id);
 
-            List<String> roleNames = roleEntityRepository.findRoleNameByUserId(id);
+            List<RoleEntity> roles = getRolesByUser(userData.get());
 
             UserEntity user = userData.orElseThrow(() -> new RuntimeException("User not found"));
 
-            return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).roleName(roleNames).status(user.isStatus()).createdAt(user.getCreatedAt()).phoneNumber(user.getPhone()).name(user.getName()).email(user.getEmail()).build();
+            return CreateUserResponseDto.builder().id(user.getId()).userName(user.getUserName()).roles(roles).status(user.isStatus()).createdAt(user.getCreatedAt()).phoneNumber(user.getPhone()).name(user.getName()).email(user.getEmail()).build();
 
         } catch (Exception e) {
 
