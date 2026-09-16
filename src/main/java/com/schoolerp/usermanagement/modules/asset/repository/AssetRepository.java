@@ -80,8 +80,8 @@ List<AssetEntity> findAssetsByName(@Param("name") String name);
 
     @Modifying
     @Query(value = """
-    INSERT INTO assets (id, name, category_id, geometry, source_type, source_id, installed_date, last_inspected_date)
-    VALUES (gen_random_uuid(), :name, :categoryId, ST_GeomFromText(:wkt, 4326), :sourceType, :sourceId, current_timestamp, current_timestamp)
+    INSERT INTO assets (id, name, category_id, geometry, source_type, source_id, installed_date, last_inspected_date , status, condition , ward)
+    VALUES (gen_random_uuid(), :name, :categoryId, ST_GeomFromText(:wkt, 4326), :sourceType, :sourceId, current_timestamp, current_timestamp ,'ACTIVE' ,'GOOD','W1')
     ON CONFLICT (source_type, source_id) DO NOTHING
     """, nativeQuery = true)
     void upsertAsset(@Param("name") String name,

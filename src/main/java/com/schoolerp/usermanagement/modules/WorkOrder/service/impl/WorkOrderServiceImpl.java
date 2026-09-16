@@ -29,6 +29,8 @@ import com.schoolerp.usermanagement.security.JwtTokenProvider;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
+import org.hibernate.jdbc.Work;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -82,11 +84,15 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
         UserEntity citizen = userEntityRepository.findById(complaint.getCitizenId().getId()).orElseThrow(() -> new RuntimeException("Complaint not found with id: " + complaint.getCitizenId()));
 
-        // 3. Fetch Inspector/User
+        // 3. Fetch Inspector
         UserEntity inspector = userEntityRepository.findById(request.getInspectorId()).orElseThrow(() -> new RuntimeException("Inspector/User not found with id: " + request.getInspectorId()));
 
+        //4. Fetch Created by
+
+        UserEntity createdBy =  userEntityRepository.findById(userId).orElseThrow(()-> new RuntimeException("Admin not found"));
+
         // 4. Create Work Order
-        WorkOrderEntity workOrder = WorkOrderEntity.builder().complaintId(complaint).inspectorId(inspector).priority(request.getPriority()).status(WorkOrderEntity.Status.ASSIGNED).dueDate(request.getDueDate()).build();
+        WorkOrderEntity workOrder = WorkOrderEntity.builder().complaintId(complaint).inspectorId(inspector).createdBy(createdBy).priority(request.getPriority()).status(WorkOrderEntity.Status.ASSIGNED).dueDate(request.getDueDate()).build();
 
         // 5. Save Work Order
         WorkOrderEntity savedWorkOrder = workOrderRepository.save(workOrder);
@@ -155,7 +161,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             citizenVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
             citizenVariables.put("assetLocation", assetLocation);
 
-            EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
+            EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
 
             emailService.sendEmail(citizenComplaintEmail);
 
@@ -184,7 +190,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
             inspectorVariables.put("assetLocation", assetLocation);
 
-            EmailRequestDto inspectorWordorderEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.INSPECTOR_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.INSPECTOR_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+            EmailRequestDto inspectorWordorderEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.INSPECTOR_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.INSPECTOR_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
 
             emailService.sendEmail(inspectorWordorderEmail);
 
@@ -234,6 +240,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
         UserEntity inspector = userEntityRepository.findById(workOrder.getInspectorId().getId()).orElseThrow(()-> new RuntimeException("Inspector not found"));
 
+        UserEntity adminUser = userEntityRepository.findById(workOrder.getCreatedBy().getId()).orElseThrow(()-> new RuntimeException("Admin not found"));
+
         // 4. Get Current and Requested Status
         WorkOrderEntity.Status previousWorkOrderStatus = workOrder.getStatus();
 
@@ -270,6 +278,36 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             case IN_PROGRESS -> {
 
                 workOrder.setStatus(WorkOrderEntity.Status.IN_PROGRESS);
+
+                // transition mail to admin
+
+
+                try {
+
+                    Map<String, Object> adminVariables = new HashMap<>();
+
+                    adminVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    adminVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    adminVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    adminVariables.put("complaintStatus", complaint.getStatus());
+                    adminVariables.put("workOrderId", workOrder.getId());
+                    adminVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    adminVariables.put("assignedTo", inspector.getUserName());
+                    adminVariables.put("priority", workOrder.getPriority());
+                    adminVariables.put("dueDate", workOrder.getDueDate());
+                    adminVariables.put("workOrderStatus", workOrder.getStatus());
+                    adminVariables.put("citizenName", citizen.getUserName());
+                    adminVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+                 //   citizenVariables.put("assetLocation", assetLocation);
+
+                    EmailRequestDto adminEmail = EmailRequestDto.builder().to(adminUser.getEmail()).subject(EmailSubjectConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).template(EmailTemplateConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).variables(adminVariables).build();
+
+                    emailService.sendEmail(adminEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Status Transition email to Admin | workOrderId={}", workOrder.getId(), e);
+                }
 
                 log.info("Work Order {} status changed from {} to IN_PROGRESS", workOrder.getId(), previousWorkOrderStatus);
 
@@ -308,35 +346,34 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 ComplaintEntity.Status newComplaintStatus = ComplaintEntity.Status.INPROGESS;
 
-                // send complaint status mail to admin to check if closed or re-assigned
+                // send transition mail to admin to check if closed or re-assigned
 
-//                // send complaint status mail to citizen
-//
-//                try {
-//
-//                    Map<String, Object> citizenVariables = new HashMap<>();
-//
-//                    citizenVariables.put("complaintId", workOrder.getComplaintId().getId());
-//                    citizenVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
-//                    citizenVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
-//                    citizenVariables.put("newComplaintStatus", complaint.getStatus());
-//                    citizenVariables.put("workOrderId", workOrder.getId());
-//                    citizenVariables.put("workOrderCreation", workOrder.getCreatedAt());
-//                    citizenVariables.put("assignedTo", inspector.getUserName());
-//                    citizenVariables.put("priority", workOrder.getPriority());
-//                    citizenVariables.put("dueDate", workOrder.getDueDate());
-//                    citizenVariables.put("workOrderStatus", workOrder.getStatus());
-//                    citizenVariables.put("citizenName", citizen.getUserName());
-//                    citizenVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
-//
-//                    EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
-//
-//                    emailService.sendEmail(citizenComplaintEmail);
+                try {
 
-//                } catch (Exception e) {
-//
-//                    log.error("Failed to send Citizen workOrder email | workOrderId={}", workOrder.getId(), e);
-//                }
+                    Map<String, Object> adminVariables = new HashMap<>();
+
+                    adminVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    adminVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    adminVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    adminVariables.put("newComplaintStatus", complaint.getStatus());
+                    adminVariables.put("workOrderId", workOrder.getId());
+                    adminVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    adminVariables.put("assignedTo", inspector.getUserName());
+                    adminVariables.put("workOrderDescription", workOrder.getWorkReport());
+                    adminVariables.put("priority", workOrder.getPriority());
+                    adminVariables.put("dueDate", workOrder.getDueDate());
+                    adminVariables.put("workOrderStatus", workOrder.getStatus());
+                    adminVariables.put("citizenName", citizen.getUserName());
+                    adminVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+
+                    EmailRequestDto adminEmail = EmailRequestDto.builder().to(adminUser.getEmail()).subject(EmailSubjectConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).template(EmailTemplateConstant.ADMIN_STATUS_RESOLVED_NOTIFICATION).variables(adminVariables).build();
+
+                    emailService.sendEmail(adminEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Admin Resolved email | workOrderId={}", workOrder.getId(), e);
+                }
 
 
                 if (previousComplaintStatus == null) {
@@ -383,11 +420,40 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 // Change Work Order Status
                 workOrder.setStatus(WorkOrderEntity.Status.CLOSED);
 
-                // send mail to admin about workorder status
 
 
                 // Save Work Report
                 workOrder.setWorkReport(requestDto.getWorkReport());
+
+                // send mail to admin about workorder status
+
+                try {
+
+                    Map<String, Object> adminVariables = new HashMap<>();
+
+                    adminVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    adminVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    adminVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    adminVariables.put("newComplaintStatus", complaint.getStatus());
+                    adminVariables.put("workOrderId", workOrder.getId());
+                    adminVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    adminVariables.put("assignedTo", inspector.getUserName());
+                    adminVariables.put("workOrderDescription", workOrder.getWorkReport());
+                    adminVariables.put("priority", workOrder.getPriority());
+                    adminVariables.put("dueDate", workOrder.getDueDate());
+                    adminVariables.put("workOrderStatus", workOrder.getStatus());
+                    adminVariables.put("citizenName", citizen.getUserName());
+                    adminVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+
+                    EmailRequestDto adminEmail = EmailRequestDto.builder().to(adminUser.getEmail()).subject(EmailSubjectConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).template(EmailTemplateConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).variables(adminVariables).build();
+
+                    emailService.sendEmail(adminEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Admin workOrder Status email | workOrderId={}", workOrder.getId(), e);
+                }
+
 
 
                 // =================================================
@@ -418,7 +484,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                     citizenVariables.put("citizenName", citizen.getUserName());
                     citizenVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
 
-                    EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
+                    EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
 
                     emailService.sendEmail(citizenComplaintEmail);
 
@@ -427,9 +493,35 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                     log.error("Failed to send Citizen workOrder email | workOrderId={}", workOrder.getId(), e);
                 }
 
-                // send the complaint completed mail to inspector
+                // send the complaint completed mail to inspector- ur insp has been closed
 
-                // send the complaint completed mail to admin
+                try {
+
+                    Map<String, Object> inspectorVariables = new HashMap<>();
+
+                    inspectorVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    inspectorVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    inspectorVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    inspectorVariables.put("newComplaintStatus", complaint.getStatus());
+                    inspectorVariables.put("workOrderId", workOrder.getId());
+                    inspectorVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    inspectorVariables.put("assignedTo", inspector.getUserName());
+                    inspectorVariables.put("workOrderDescription", workOrder.getWorkReport());
+                    inspectorVariables.put("priority", workOrder.getPriority());
+                    inspectorVariables.put("dueDate", workOrder.getDueDate());
+                    inspectorVariables.put("workOrderStatus", workOrder.getStatus());
+                    inspectorVariables.put("citizenName", citizen.getUserName());
+                    inspectorVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+
+                    EmailRequestDto inspectorEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.INSPECTOR_STATUS_TRANSITION_NOTIFICATION).template(EmailTemplateConstant.INSPECTOR_STATUS_CLOSED_NOTIFICATION).variables(inspectorVariables).build();
+
+                    emailService.sendEmail(inspectorEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Inspector workOrder Closed email | workOrderId={}", workOrder.getId(), e);
+                }
+
 
 
                 if (previousComplaintStatus == null) {
@@ -456,7 +548,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 saveWorkOrderPhotos(requestDto.getPhotos(), workOrder);
 
 
-                log.info("Work Order {} changed to CLOSED and Complaint {} changed to REJECTED", workOrder.getId(), complaint.getId());
+                log.info("Work Order {} changed to CLOSED and Complaint {} changed to Completed", workOrder.getId(), complaint.getId());
             }
 
 
@@ -466,7 +558,94 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
             case ASSIGNED -> {
 
-                throw new RuntimeException("Work Order cannot be changed back to ASSIGNED");
+                String inspectorReport = workOrder.getWorkReport();
+
+            //    validateWorkReport(requestDto.getRejectionReason());
+
+
+                // Change Work Order Status
+                workOrder.setStatus(WorkOrderEntity.Status.ASSIGNED);
+
+
+                // Save Rejection Report
+            //    workOrder.setWorkReport(requestDto.getWorkReport());
+                workOrder.setRejectionReason(requestDto.getRejectionReason());
+
+
+                // =================================================
+                // Complaint Status
+                // =================================================
+
+                ComplaintEntity.Status previousComplaintStatus = complaint.getStatus();
+
+                ComplaintEntity.Status newComplaintStatus = ComplaintEntity.Status.INPROGESS;
+
+
+                // sent mail to inspector that your insp is rejected and assigned to you again
+
+                try {
+
+                    Map<String, Object> inspectorVariables = new HashMap<>();
+
+                    inspectorVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    inspectorVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    inspectorVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    inspectorVariables.put("newComplaintStatus", complaint.getStatus());
+                    inspectorVariables.put("workOrderId", workOrder.getId());
+                    inspectorVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    inspectorVariables.put("assignedTo", inspector.getUserName());
+                    inspectorVariables.put("inspectorReport", inspectorReport);
+                    inspectorVariables.put("adminReport", requestDto.getRejectionReason());
+                    inspectorVariables.put("priority", workOrder.getPriority());
+                    inspectorVariables.put("dueDate", workOrder.getDueDate());
+                    inspectorVariables.put("workOrderStatus", workOrder.getStatus());
+                    inspectorVariables.put("citizenName", citizen.getUserName());
+                    inspectorVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+
+                    EmailRequestDto inspectorEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.INSPECTOR_STATUS_TRANSITION_NOTIFICATION).template(EmailTemplateConstant.INSPECTOR_STATUS_REJECTED_NOTIFICATION).variables(inspectorVariables).build();
+
+                    emailService.sendEmail(inspectorEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Inspector workOrder Rejection email | workOrderId={}", workOrder.getId(), e);
+                }
+
+                // sent mail to admin that u have rejected the inspection.
+
+                try {
+
+                    Map<String, Object> adminVariables = new HashMap<>();
+
+                    adminVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    adminVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    adminVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    adminVariables.put("newComplaintStatus", complaint.getStatus());
+                    adminVariables.put("workOrderId", workOrder.getId());
+                    adminVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    adminVariables.put("assignedTo", inspector.getUserName());
+                    adminVariables.put("inspectorReport", inspectorReport);
+                    adminVariables.put("adminReport", workOrder.getRejectionReason());
+                    adminVariables.put("priority", workOrder.getPriority());
+                    adminVariables.put("dueDate", workOrder.getDueDate());
+                    adminVariables.put("workOrderStatus", workOrder.getStatus());
+                    adminVariables.put("citizenName", citizen.getUserName());
+                    adminVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+
+                    EmailRequestDto adminEmail = EmailRequestDto.builder().to(adminUser.getEmail()).subject(EmailSubjectConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).template(EmailTemplateConstant.ADMIN_STATUS_TRANSITION_NOTIFICATION).variables(adminVariables).build();
+
+                    emailService.sendEmail(adminEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Admin workOrder Status email | workOrderId={}", workOrder.getId(), e);
+                }
+
+                saveWorkOrderPhotos(requestDto.getPhotos(), workOrder);
+
+
+
+            //    throw new RuntimeException("Work Order cannot be changed back to ASSIGNED");
             }
 
 
@@ -543,14 +722,14 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             case RESOLVED -> {
 
                 // RESOLVED cannot move back
-                throw new RuntimeException("Work Order with RESOLVED status cannot be changed again");
+               // throw new RuntimeException("Work Order with RESOLVED status cannot be changed again");
             }
 
 
             case CLOSED -> {
 
                 // CLOSED is final
-                throw new RuntimeException("Work Order with CLOSED status cannot be changed again");
+               // throw new RuntimeException("Work Order with CLOSED status cannot be changed again");
             }
 
 

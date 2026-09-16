@@ -10,5 +10,8 @@ public final class EmailSubjectConstant {
     public static final String ADMIN_WORKORDER_NOTIFICATION = "New WorkOrder Created - SCAIMS";
     public static final String CITIZEN_WORKORDER_NOTIFICATION = "Progress on Your Complaint - WorkOrder created";
     public static final String INSPECTOR_WORKORDER_NOTIFICATION = "New WorkOrder Received - SCAIMS";
+    public static final String ADMIN_STATUS_TRANSITION_NOTIFICATION = "Progress on Your Created Work Order";
+    public static final String INSPECTOR_STATUS_TRANSITION_NOTIFICATION = "Progress on Your Work Order Inspection";
+
 
 }

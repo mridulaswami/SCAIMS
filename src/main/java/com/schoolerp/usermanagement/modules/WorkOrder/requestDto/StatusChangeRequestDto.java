@@ -25,5 +25,7 @@ public class StatusChangeRequestDto {
 
     private String workReport;
 
+    private String rejectionReason;
+
     private List<MultipartFile> photos;
 }
