@@ -191,6 +191,12 @@ public class SecurityConfig {
                         .requestMatchers("/uploads/**").permitAll()
 
                         // -----------------------------------------
+                        // WebSocket STOMP Endpoint
+                        // -----------------------------------------
+
+                        .requestMatchers("/ws-notifications/**").permitAll()
+
+                        // -----------------------------------------
                         // All API v1 requires authentication
                         // -----------------------------------------
 

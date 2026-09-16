@@ -17,6 +17,12 @@ import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository
 import com.schoolerp.usermanagement.modules.user.requestDto.ChangePasswordRequestDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateFieldEngineerDto;
 import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto;
+import com.schoolerp.usermanagement.modules.notification.constant.NotificationTitleConstant;
+import com.schoolerp.usermanagement.modules.notification.dto.NotificationRequestDto;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationPriority;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationType;
+import com.schoolerp.usermanagement.modules.notification.enums.TargetType;
+import com.schoolerp.usermanagement.modules.notification.event.NotificationEventPublisher;
 import com.schoolerp.usermanagement.modules.user.requestDto.SendOptRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
 import com.schoolerp.usermanagement.modules.user.service.UserService;
@@ -46,6 +52,7 @@ public class UserServiceImpl implements UserService {
     private final UserRoleRepository userRoleRepository;
     private final EmailService emailService;
     private final OtpEntityRepository otpEntityRepository;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Value("${spring.opt.exprired-at}")
     private Integer optExpiredTime;
@@ -425,6 +432,37 @@ public class UserServiceImpl implements UserService {
 
 
         log.info("Registration success email triggered | userId={} | email={} | roles={}", savedUser.getId(), savedUser.getEmail(), roleNames);
+
+
+        // =====================================================
+        // IN-APP NOTIFICATION TO ALL ADMINS
+        // =====================================================
+        try {
+            List<UUID> adminUserIds = userRoleRepository.findByRoleId(1).stream()
+                    .map(ur -> ur.getUser().getId())
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+
+            if (!adminUserIds.isEmpty()) {
+                notificationEventPublisher.sendNotification(
+                        NotificationRequestDto.builder()
+                                .recipientIds(adminUserIds)
+                                .actorId(savedUser.getId())
+                                .title(NotificationTitleConstant.FIELD_ENGINEER_REGISTERED)
+                                .message("A new Field Engineer has been registered: " + savedUser.getName() + " (" + savedUser.getEmail() + ")")
+                                .type(NotificationType.USER_REGISTERED)
+                                .priority(NotificationPriority.MEDIUM)
+                                .targetType(TargetType.USER)
+                                .targetId(savedUser.getId().toString())
+                                .build()
+                );
+
+                log.info("In-app notification sent to {} admins for new field engineer: {}", adminUserIds.size(), savedUser.getId());
+            }
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification for field engineer registration: {}", ex.getMessage(), ex);
+        }
 
 
         // =====================================================
