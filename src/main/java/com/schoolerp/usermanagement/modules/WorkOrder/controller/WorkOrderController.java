@@ -32,7 +32,7 @@ public class WorkOrderController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<CreateWorkOrderResponseDto>> createWorkOrder(@Valid @ModelAttribute CreateWorkOrderRequestDto request , HttpServletRequest req) {
+    public ResponseEntity<ApiResponse<CreateWorkOrderResponseDto>> createWorkOrder(@Valid @RequestBody CreateWorkOrderRequestDto request , HttpServletRequest req) {
 
         log.info("Started creating Work Order with request: {}", request);
 

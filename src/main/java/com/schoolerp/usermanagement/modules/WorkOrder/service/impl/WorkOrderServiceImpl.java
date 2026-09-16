@@ -106,22 +106,22 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             });
 
 
-                Map<String, Object> inspectorVariables = new HashMap<>();
+                Map<String, Object> adminVariables = new HashMap<>();
 
-                inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId());
-                inspectorVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
-                inspectorVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
-                inspectorVariables.put("workOrderId", savedWorkOrder.getId());
-                inspectorVariables.put("assignedTo", inspector.getUserName());
-                inspectorVariables.put("priority", savedWorkOrder.getPriority());
-                inspectorVariables.put("dueDate", savedWorkOrder.getDueDate());
-                inspectorVariables.put("workOrderStatus", savedWorkOrder.getStatus());
-                inspectorVariables.put("citizenName", citizen.getUserName());
-                inspectorVariables.put("citizenEmail", citizen.getEmail());
-                inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
-                inspectorVariables.put("assetLocation", assetLocation);
+                adminVariables.put("complaintId", savedWorkOrder.getComplaintId().getId());
+                adminVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
+                adminVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
+                adminVariables.put("workOrderId", savedWorkOrder.getId());
+                adminVariables.put("assignedTo", inspector.getUserName());
+                adminVariables.put("priority", savedWorkOrder.getPriority());
+                adminVariables.put("dueDate", savedWorkOrder.getDueDate());
+                adminVariables.put("workOrderStatus", savedWorkOrder.getStatus());
+                adminVariables.put("citizenName", citizen.getUserName());
+                adminVariables.put("citizenEmail", citizen.getEmail());
+                adminVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
+                adminVariables.put("assetLocation", assetLocation);
 
-                EmailRequestDto adminWorkOrderEmail = EmailRequestDto.builder().to(admin.getEmail()).subject(EmailSubjectConstant.ADMIN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.ADMIN_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+                EmailRequestDto adminWorkOrderEmail = EmailRequestDto.builder().to(admin.getEmail()).subject(EmailSubjectConstant.ADMIN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.ADMIN_WORKORDER_NOTIFICATION).variables(adminVariables).build();
 
                 emailService.sendEmail(adminWorkOrderEmail);
 
@@ -139,23 +139,23 @@ public class WorkOrderServiceImpl implements WorkOrderService {
         // 8. Email to Citizen for their Complaint Status change
         try {
 
-            Map<String, Object> inspectorVariables = new HashMap<>();
+            Map<String, Object> citizenVariables = new HashMap<>();
 
-            inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId());
-            inspectorVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
-            inspectorVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
-            inspectorVariables.put("complaintStatus", complaint.getStatus());
-            inspectorVariables.put("workOrderId", savedWorkOrder.getId());
-            inspectorVariables.put("workOrderCreation", savedWorkOrder.getCreatedAt());
-            inspectorVariables.put("assignedTo", inspector.getUserName());
-            inspectorVariables.put("priority", savedWorkOrder.getPriority());
-            inspectorVariables.put("dueDate", savedWorkOrder.getDueDate());
-            inspectorVariables.put("workOrderStatus", savedWorkOrder.getStatus());
-            inspectorVariables.put("citizenName", citizen.getUserName());
-            inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
-            inspectorVariables.put("assetLocation", assetLocation);
+            citizenVariables.put("complaintId", savedWorkOrder.getComplaintId().getId());
+            citizenVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
+            citizenVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
+            citizenVariables.put("complaintStatus", complaint.getStatus());
+            citizenVariables.put("workOrderId", savedWorkOrder.getId());
+            citizenVariables.put("workOrderCreation", savedWorkOrder.getCreatedAt());
+            citizenVariables.put("assignedTo", inspector.getUserName());
+            citizenVariables.put("priority", savedWorkOrder.getPriority());
+            citizenVariables.put("dueDate", savedWorkOrder.getDueDate());
+            citizenVariables.put("workOrderStatus", savedWorkOrder.getStatus());
+            citizenVariables.put("citizenName", citizen.getUserName());
+            citizenVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
+            citizenVariables.put("assetLocation", assetLocation);
 
-            EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+            EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
 
             emailService.sendEmail(citizenComplaintEmail);
 
@@ -170,7 +170,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
             Map<String, Object> inspectorVariables = new HashMap<>();
 
-            inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId());
+            inspectorVariables.put("complaintId", savedWorkOrder.getComplaintId().getId());
             inspectorVariables.put("complaintTitle", savedWorkOrder.getComplaintId().getTitle());
             inspectorVariables.put("complaintDescription", savedWorkOrder.getComplaintId().getDescription());
             inspectorVariables.put("complaintStatus", complaint.getStatus());
@@ -184,7 +184,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             inspectorVariables.put("assetName", savedWorkOrder.getComplaintId().getAsset().getName());
             inspectorVariables.put("assetLocation", assetLocation);
 
-            EmailRequestDto inspectorWordorderEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.INSPECTOR_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
+            EmailRequestDto inspectorWordorderEmail = EmailRequestDto.builder().to(citizen.getEmail()).subject(EmailSubjectConstant.INSPECTOR_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.INSPECTOR_WORKORDER_NOTIFICATION).variables(inspectorVariables).build();
 
             emailService.sendEmail(inspectorWordorderEmail);
 
@@ -230,6 +230,9 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             throw new RuntimeException("Complaint not found for Work Order: " + workOrder.getId());
         }
 
+        UserEntity citizen = userEntityRepository.findById(complaint.getCitizenId().getId()).orElseThrow(()-> new RuntimeException("Citizen not found"));
+
+        UserEntity inspector = userEntityRepository.findById(workOrder.getInspectorId().getId()).orElseThrow(()-> new RuntimeException("Inspector not found"));
 
         // 4. Get Current and Requested Status
         WorkOrderEntity.Status previousWorkOrderStatus = workOrder.getStatus();
@@ -269,6 +272,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 workOrder.setStatus(WorkOrderEntity.Status.IN_PROGRESS);
 
                 log.info("Work Order {} status changed from {} to IN_PROGRESS", workOrder.getId(), previousWorkOrderStatus);
+
+
             }
 
 
@@ -288,6 +293,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 // Change Work Order Status
                 workOrder.setStatus(WorkOrderEntity.Status.RESOLVED);
 
+                // send mail to inspector/admin about workorder status
+
 
                 // Save Work Report
                 workOrder.setWorkReport(requestDto.getWorkReport());
@@ -299,7 +306,37 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 ComplaintEntity.Status previousComplaintStatus = complaint.getStatus();
 
-                ComplaintEntity.Status newComplaintStatus = ComplaintEntity.Status.COMPLETED;
+                ComplaintEntity.Status newComplaintStatus = ComplaintEntity.Status.INPROGESS;
+
+                // send complaint status mail to admin to check if closed or re-assigned
+
+//                // send complaint status mail to citizen
+//
+//                try {
+//
+//                    Map<String, Object> citizenVariables = new HashMap<>();
+//
+//                    citizenVariables.put("complaintId", workOrder.getComplaintId().getId());
+//                    citizenVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+//                    citizenVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+//                    citizenVariables.put("newComplaintStatus", complaint.getStatus());
+//                    citizenVariables.put("workOrderId", workOrder.getId());
+//                    citizenVariables.put("workOrderCreation", workOrder.getCreatedAt());
+//                    citizenVariables.put("assignedTo", inspector.getUserName());
+//                    citizenVariables.put("priority", workOrder.getPriority());
+//                    citizenVariables.put("dueDate", workOrder.getDueDate());
+//                    citizenVariables.put("workOrderStatus", workOrder.getStatus());
+//                    citizenVariables.put("citizenName", citizen.getUserName());
+//                    citizenVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+//
+//                    EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
+//
+//                    emailService.sendEmail(citizenComplaintEmail);
+
+//                } catch (Exception e) {
+//
+//                    log.error("Failed to send Citizen workOrder email | workOrderId={}", workOrder.getId(), e);
+//                }
 
 
                 if (previousComplaintStatus == null) {
@@ -346,6 +383,8 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                 // Change Work Order Status
                 workOrder.setStatus(WorkOrderEntity.Status.CLOSED);
 
+                // send mail to admin about workorder status
+
 
                 // Save Work Report
                 workOrder.setWorkReport(requestDto.getWorkReport());
@@ -357,7 +396,40 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 ComplaintEntity.Status previousComplaintStatus = complaint.getStatus();
 
-                ComplaintEntity.Status newComplaintStatus = ComplaintEntity.Status.REJECTED;
+                ComplaintEntity.Status newComplaintStatus = ComplaintEntity.Status.COMPLETED;
+
+
+                // send complaint completed status mail to citizen
+
+                try {
+
+                    Map<String, Object> citizenVariables = new HashMap<>();
+
+                    citizenVariables.put("complaintId", workOrder.getComplaintId().getId());
+                    citizenVariables.put("complaintTitle", workOrder.getComplaintId().getTitle());
+                    citizenVariables.put("complaintDescription", workOrder.getComplaintId().getDescription());
+                    citizenVariables.put("newComplaintStatus", complaint.getStatus());
+                    citizenVariables.put("workOrderId", workOrder.getId());
+                    citizenVariables.put("workOrderCreation", workOrder.getCreatedAt());
+                    citizenVariables.put("assignedTo", inspector.getUserName());
+                    citizenVariables.put("priority", workOrder.getPriority());
+                    citizenVariables.put("dueDate", workOrder.getDueDate());
+                    citizenVariables.put("workOrderStatus", workOrder.getStatus());
+                    citizenVariables.put("citizenName", citizen.getUserName());
+                    citizenVariables.put("assetName", workOrder.getComplaintId().getAsset().getName());
+
+                    EmailRequestDto citizenComplaintEmail = EmailRequestDto.builder().to(inspector.getEmail()).subject(EmailSubjectConstant.CITIZEN_WORKORDER_NOTIFICATION).template(EmailTemplateConstant.CITIZEN_WORKORDER_NOTIFICATION).variables(citizenVariables).build();
+
+                    emailService.sendEmail(citizenComplaintEmail);
+
+                } catch (Exception e) {
+
+                    log.error("Failed to send Citizen workOrder email | workOrderId={}", workOrder.getId(), e);
+                }
+
+                // send the complaint completed mail to inspector
+
+                // send the complaint completed mail to admin
 
 
                 if (previousComplaintStatus == null) {
