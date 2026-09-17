@@ -76,6 +76,7 @@ public class UserServiceImpl implements UserService {
         // Generate OTP
         String otp = generateOtp();
 
+
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(optExpiredTime);
 
         // Check existing OTP
@@ -113,15 +114,6 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    // =========================================================
-    // VERIFY OTP
-    // NORMAL REGISTRATION
-    //
-    // IMPORTANT:
-    // roleId remains INTEGER here.
-    // Only one role is assigned.
-    // Default role = CITIZEN (2)
-    // =========================================================
 
     @Override
     @Transactional

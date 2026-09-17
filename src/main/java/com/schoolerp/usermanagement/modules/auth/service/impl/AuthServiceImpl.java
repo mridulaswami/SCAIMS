@@ -206,17 +206,18 @@ public class AuthServiceImpl implements AuthService {
             return LoginResponseDto.builder().accessToken(accessToken).refreshToken(refreshToken).tokenType("Bearer").user(user).build();
 
 
-        } catch (BadCredentialsException ex) {
-
-            log.warn("Login failed - invalid credentials | username={}", requestDto.getUserName());
-
-            throw ex;
+      //  }
+//        catch (BadCredentialsException ex) {
+//
+//            log.warn("Login failed - invalid credentials | username={}", requestDto.getUserName());
+//
+//            throw ex;
 
         } catch (RuntimeException ex) {
 
-            log.error("Login failed | username={} | error={}", requestDto.getUserName(), ex.getMessage(), ex);
+            log.warn("Login failed | username={} | error={}", requestDto.getUserName(), ex.getMessage(), ex);
 
-            throw ex;
+            throw new RuntimeException("Invalid Username or Password");
         }
     }
 
