@@ -39,7 +39,7 @@ public class CreateUserRequestDto {
 
     private String wardAssigned;
 
-    private Integer otp;
+    private String otp;
 
     private boolean status;
 

@@ -42,7 +42,7 @@ public class AuthController {
 
             log.error("POST /api/v1/auth/login failed | username={} | error={}", requestDto.getUserName(), ex.getMessage(), ex);
 
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.of(false, "Failed to Login User error=" + ex.getMessage(), null));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.of(false, "Failed to Login User : " + ex.getMessage(), null));
         }
     }
 
