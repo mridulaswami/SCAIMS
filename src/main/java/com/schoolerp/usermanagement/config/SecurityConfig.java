@@ -196,6 +196,9 @@ public class SecurityConfig {
 
                         .requestMatchers("/ws-notifications/**").permitAll()
 
+                        // Temporary WebSocket notification test page
+                        .requestMatchers("/", "/index.html").permitAll()
+
                         // -----------------------------------------
                         // All API v1 requires authentication
                         // -----------------------------------------
@@ -217,4 +220,3 @@ public class SecurityConfig {
         return http.build();
     }
 }
-

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Notification WebSocket Tester</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7.1.1/bundles/stomp.umd.min.js"></script>
+    <style>
+        :root { color-scheme: light; font-family: Arial, sans-serif; }
+        body { background: #f4f7fb; color: #182230; margin: 0; padding: 24px; }
+        main { background: #fff; border: 1px solid #dbe3ee; border-radius: 12px; margin: auto; max-width: 900px; padding: 24px; }
+        h1 { margin-top: 0; font-size: 24px; }
+        label { display: block; font-weight: 600; margin: 16px 0 6px; }
+        input, textarea, select, button { box-sizing: border-box; font: inherit; width: 100%; }
+        input, textarea, select { border: 1px solid #b8c4d4; border-radius: 6px; padding: 10px; }
+        textarea { min-height: 110px; resize: vertical; }
+        .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+        button { background: #1769e0; border: 0; border-radius: 6px; color: white; cursor: pointer; margin-top: 18px; padding: 11px; }
+        button.secondary { background: #637083; }
+        button:disabled { cursor: not-allowed; opacity: .55; }
+        #status { border-radius: 6px; margin-top: 18px; padding: 10px; }
+        .offline { background: #fff0f0; color: #a51d2d; }
+        .online { background: #eaf8ef; color: #176b35; }
+        pre { background: #101827; border-radius: 6px; color: #d9e5f7; min-height: 180px; overflow: auto; padding: 14px; white-space: pre-wrap; }
+        .hint { color: #5f6b7a; font-size: 13px; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>In-app Notification WebSocket Tester</h1>
+    <p class="hint">Testing only. Paste the access token without or with the <code>Bearer </code> prefix.</p>
+
+    <label for="token">Access token</label>
+    <textarea id="token" placeholder="eyJ..."></textarea>
+
+    <div class="row">
+        <div>
+            <label for="endpoint">Endpoint path</label>
+            <input id="endpoint">
+        </div>
+        <div>
+            <label for="transport">Transport</label>
+            <select id="transport">
+                <option value="sockjs">SockJS</option>
+                <option value="native">Native WebSocket</option>
+            </select>
+        </div>
+    </div>
+
+    <button id="connect">Connect and subscribe</button>
+    <button id="disconnect" class="secondary" disabled>Disconnect</button>
+
+    <div id="status" class="offline">Disconnected</div>
+    <label for="log">Events and received notifications</label>
+    <pre id="log"></pre>
+</main>
+
+<script>
+    let client = null;
+    const tokenInput = document.getElementById("token");
+    const endpointInput = document.getElementById("endpoint");
+    const transportInput = document.getElementById("transport");
+    const status = document.getElementById("status");
+    const log = document.getElementById("log");
+    const connectButton = document.getElementById("connect");
+    const disconnectButton = document.getElementById("disconnect");
+    const applicationContext = window.location.pathname.replace(/\/$/, "");
+    endpointInput.value = (applicationContext || "") + "/ws-notifications";
+
+    function writeLog(message, value) {
+        const line = new Date().toLocaleTimeString() + "  " + message;
+        log.textContent += value === undefined
+            ? line + "\n"
+            : line + "\n" + JSON.stringify(value, null, 2) + "\n";
+        log.scrollTop = log.scrollHeight;
+    }
+
+    function setConnected(connected) {
+        status.textContent = connected ? "Connected and subscribed" : "Disconnected";
+        status.className = connected ? "online" : "offline";
+        connectButton.disabled = connected;
+        disconnectButton.disabled = !connected;
+    }
+
+    function normalizedToken() {
+        const value = tokenInput.value.trim();
+        return value.startsWith("Bearer ") ? value : "Bearer " + value;
+    }
+
+    function disconnect() {
+        if (client) {
+            client.deactivate();
+            client = null;
+        }
+        setConnected(false);
+        writeLog("Disconnected");
+    }
+
+    connectButton.addEventListener("click", function () {
+        const token = tokenInput.value.trim();
+        if (!token) {
+            writeLog("Enter an access token first");
+            return;
+        }
+
+        disconnect();
+        const endpoint = endpointInput.value.trim() || "/ws-notifications";
+        const brokerUrl = window.location.origin + endpoint;
+
+        client = new StompJs.Client({
+            connectHeaders: { Authorization: normalizedToken() },
+            reconnectDelay: 0,
+            debug: function (message) { writeLog("STOMP: " + message); }
+        });
+
+        if (transportInput.value === "sockjs") {
+            client.webSocketFactory = function () {
+                return new SockJS(brokerUrl);
+            };
+        } else {
+            client.brokerURL = (window.location.protocol === "https:" ? "wss://" : "ws://")
+                + window.location.host + endpoint;
+        }
+
+        client.onConnect = function () {
+            setConnected(true);
+            writeLog("Connected. Subscribing to /user/queue/notifications");
+            client.subscribe("/user/queue/notifications", function (frame) {
+                try {
+                    writeLog("Notification received", JSON.parse(frame.body));
+                } catch (error) {
+                    writeLog("Notification received (non-JSON): " + frame.body);
+                }
+            });
+        };
+
+        client.onStompError = function (frame) {
+            writeLog("Broker error: " + (frame.headers.message || "unknown error"), frame.body);
+        };
+
+        client.onWebSocketError = function (event) {
+            writeLog("WebSocket error");
+            console.error(event);
+        };
+
+        client.onWebSocketClose = function () {
+            setConnected(false);
+            writeLog("WebSocket closed");
+        };
+
+        writeLog("Connecting to " + brokerUrl);
+        client.activate();
+    });
+
+    disconnectButton.addEventListener("click", disconnect);
+</script>
+</body>
+</html>

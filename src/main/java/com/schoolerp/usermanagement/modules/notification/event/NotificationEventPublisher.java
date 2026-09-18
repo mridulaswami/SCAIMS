@@ -134,6 +134,7 @@ public class NotificationEventPublisher {
     /**
      * Convenience method for backward compatibility
      */
+    @Async("taskExecutor")
     public void publishToUser(UUID recipientId,
                               UUID actorId,
                               String title,
@@ -157,6 +158,7 @@ public class NotificationEventPublisher {
     /**
      * Convenience method for multiple recipients
      */
+    @Async("taskExecutor")
     public void publishToMultipleUsers(Collection<UUID> recipientIds,
                                        UUID actorId,
                                        String title,
@@ -183,6 +185,7 @@ public class NotificationEventPublisher {
     /**
      * Convenience method to broadcast notification to all ADMIN users (roleId = 1)
      */
+    @Async("taskExecutor")
     public void publishToAdmins(UUID actorId,
                                 String title,
                                 String message,
@@ -217,4 +220,3 @@ public class NotificationEventPublisher {
         }
     }
 }
-
