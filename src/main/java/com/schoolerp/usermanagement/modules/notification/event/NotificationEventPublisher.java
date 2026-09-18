@@ -11,6 +11,7 @@ import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.schoolerp.usermanagement.modules.auth.repository.UserRoleRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,6 +30,7 @@ public class NotificationEventPublisher {
 
     private final NotificationRepository notificationRepository;
     private final UserEntityRepository userEntityRepository;
+    private final UserRoleRepository userRoleRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
@@ -176,4 +179,42 @@ public class NotificationEventPublisher {
                 .targetId(targetId)
                 .build());
     }
+
+    /**
+     * Convenience method to broadcast notification to all ADMIN users (roleId = 1)
+     */
+    public void publishToAdmins(UUID actorId,
+                                String title,
+                                String message,
+                                NotificationType type,
+                                NotificationPriority priority,
+                                TargetType targetType,
+                                String targetId) {
+        try {
+            List<UUID> adminUserIds = userRoleRepository.findByRoleId(1).stream()
+                    .map(ur -> ur.getUser().getId())
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .toList();
+
+            if (!adminUserIds.isEmpty()) {
+                publishToMultipleUsers(
+                        adminUserIds,
+                        actorId,
+                        title,
+                        message,
+                        type,
+                        priority != null ? priority : NotificationPriority.MEDIUM,
+                        targetType,
+                        targetId
+                );
+                log.info("Dispatched notification to {} admins: title={}", adminUserIds.size(), title);
+            } else {
+                log.warn("No admin users found with roleId=1 to notify for: {}", title);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to publish notification to admins: {}", ex.getMessage(), ex);
+        }
+    }
 }
+

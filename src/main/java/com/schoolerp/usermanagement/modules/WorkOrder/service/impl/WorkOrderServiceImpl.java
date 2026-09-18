@@ -23,6 +23,11 @@ import com.schoolerp.usermanagement.modules.email.constant.EmailSubjectConstant;
 import com.schoolerp.usermanagement.modules.email.constant.EmailTemplateConstant;
 import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
 import com.schoolerp.usermanagement.modules.email.service.EmailService;
+import com.schoolerp.usermanagement.modules.notification.constant.NotificationTitleConstant;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationPriority;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationType;
+import com.schoolerp.usermanagement.modules.notification.enums.TargetType;
+import com.schoolerp.usermanagement.modules.notification.event.NotificationEventPublisher;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
@@ -64,6 +69,7 @@ public class WorkOrderServiceImpl implements WorkOrderService {
     private final GeometryService geometryService;
     private final GeometryService geometryConverter;
     private final EmailService emailService;
+    private final NotificationEventPublisher notificationEventPublisher;
 
 
     @Override
@@ -199,10 +205,61 @@ public class WorkOrderServiceImpl implements WorkOrderService {
             log.error("Failed to send Inspector workOrder email | workOrderId={}", savedWorkOrder.getId(), e);
         }
 
+        // 10. Send In-App Notifications
+        // 10.1 In-app notification to Inspector
+        try {
+            notificationEventPublisher.publishToUser(
+                    inspector.getId(),
+                    createdBy.getId(),
+                    NotificationTitleConstant.WORK_ORDER_ASSIGNED_INSPECTOR,
+                    "You have been assigned Work Order #" + savedWorkOrder.getId() + " for complaint '" + complaint.getTitle() + "' (Priority: " + savedWorkOrder.getPriority() + ", Due: " + savedWorkOrder.getDueDate() + ")",
+                    NotificationType.WORK_ORDER_ASSIGNED,
+                    NotificationPriority.HIGH,
+                    TargetType.WORK_ORDER,
+                    savedWorkOrder.getId().toString()
+            );
+            log.info("In-app notification sent to inspector {} for work order {}", inspector.getId(), savedWorkOrder.getId());
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification to inspector for work order {}", savedWorkOrder.getId(), ex);
+        }
 
-        // 10 . Map Entity -> Response DTO
+        // 10.2 In-app notification to Citizen
+        try {
+            notificationEventPublisher.publishToUser(
+                    citizen.getId(),
+                    createdBy.getId(),
+                    NotificationTitleConstant.WORK_ORDER_CREATED_CITIZEN,
+                    "A field engineer (" + inspector.getName() + ") has been assigned to investigate your complaint #" + complaint.getId() + ".",
+                    NotificationType.COMPLAINT_STATUS_UPDATED,
+                    NotificationPriority.MEDIUM,
+                    TargetType.COMPLAINT,
+                    complaint.getId().toString()
+            );
+            log.info("In-app notification sent to citizen {} for work order assignment on complaint {}", citizen.getId(), complaint.getId());
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification to citizen for work order {}", savedWorkOrder.getId(), ex);
+        }
+
+        // 10.3 In-app notification to Admin (Creator)
+        try {
+            notificationEventPublisher.publishToUser(
+                    createdBy.getId(),
+                    null,
+                    NotificationTitleConstant.WORK_ORDER_CREATED_ADMIN,
+                    "Work Order #" + savedWorkOrder.getId() + " successfully assigned to " + inspector.getName() + " for complaint '" + complaint.getTitle() + "'.",
+                    NotificationType.WORK_ORDER_ASSIGNED,
+                    NotificationPriority.LOW,
+                    TargetType.WORK_ORDER,
+                    savedWorkOrder.getId().toString()
+            );
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification to admin for work order {}", savedWorkOrder.getId(), ex);
+        }
+
+        // 11. Map Entity -> Response DTO
         return CreateWorkOrderResponseDto.builder().id(savedWorkOrder.getId()).complaintId(savedWorkOrder.getComplaintId().getId()).inspectorId(savedWorkOrder.getInspectorId().getId()).priority(savedWorkOrder.getPriority()).status(savedWorkOrder.getStatus()).dueDate(savedWorkOrder.getDueDate()).createdAt(savedWorkOrder.getCreatedAt()).build();
     }
+
 
     @Override
     @Transactional
@@ -309,10 +366,42 @@ public class WorkOrderServiceImpl implements WorkOrderService {
                     log.error("Failed to send Status Transition email to Admin | workOrderId={}", workOrder.getId(), e);
                 }
 
+                // In-app notification to Admin
+                try {
+                    notificationEventPublisher.publishToUser(
+                            adminUser.getId(),
+                            inspector.getId(),
+                            NotificationTitleConstant.WORK_ORDER_IN_PROGRESS,
+                            "Field engineer " + inspector.getName() + " has started work on Work Order #" + workOrder.getId() + ".",
+                            NotificationType.WORK_ORDER_STATUS_CHANGED,
+                            NotificationPriority.MEDIUM,
+                            TargetType.WORK_ORDER,
+                            workOrder.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to admin for work order in-progress: {}", ex.getMessage(), ex);
+                }
+
+                // In-app notification to Citizen
+                try {
+                    notificationEventPublisher.publishToUser(
+                            citizen.getId(),
+                            inspector.getId(),
+                            NotificationTitleConstant.COMPLAINT_STATUS_UPDATED,
+                            "Work is now actively in progress for your complaint #" + complaint.getId() + ".",
+                            NotificationType.COMPLAINT_STATUS_UPDATED,
+                            NotificationPriority.MEDIUM,
+                            TargetType.COMPLAINT,
+                            complaint.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to citizen for work order in-progress: {}", ex.getMessage(), ex);
+                }
+
                 log.info("Work Order {} status changed from {} to IN_PROGRESS", workOrder.getId(), previousWorkOrderStatus);
 
-
             }
+
 
 
             // =====================================================
@@ -399,9 +488,41 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 saveWorkOrderPhotos(requestDto.getPhotos(), workOrder);
 
+                // In-app notification to Admin for review
+                try {
+                    notificationEventPublisher.publishToUser(
+                            adminUser.getId(),
+                            inspector.getId(),
+                            NotificationTitleConstant.WORK_ORDER_RESOLVED_ADMIN,
+                            "Work Order #" + workOrder.getId() + " has been marked RESOLVED by " + inspector.getName() + ". Please review the work report and verify.",
+                            NotificationType.WORK_ORDER_STATUS_CHANGED,
+                            NotificationPriority.HIGH,
+                            TargetType.WORK_ORDER,
+                            workOrder.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to admin for resolved work order: {}", ex.getMessage(), ex);
+                }
+
+                // In-app notification to Citizen
+                try {
+                    notificationEventPublisher.publishToUser(
+                            citizen.getId(),
+                            inspector.getId(),
+                            NotificationTitleConstant.COMPLAINT_STATUS_UPDATED,
+                            "Work has been completed by the field engineer for your complaint #" + complaint.getId() + " and is undergoing admin review.",
+                            NotificationType.COMPLAINT_STATUS_UPDATED,
+                            NotificationPriority.MEDIUM,
+                            TargetType.COMPLAINT,
+                            complaint.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to citizen for resolved work order: {}", ex.getMessage(), ex);
+                }
 
                 log.info("Work Order {} changed to RESOLVED and Complaint {} changed to COMPLETED", workOrder.getId(), complaint.getId());
             }
+
 
 
             // =====================================================
@@ -547,9 +668,41 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 saveWorkOrderPhotos(requestDto.getPhotos(), workOrder);
 
+                // In-app notification to Citizen
+                try {
+                    notificationEventPublisher.publishToUser(
+                            citizen.getId(),
+                            changedBy != null ? changedBy.getId() : null,
+                            NotificationTitleConstant.COMPLAINT_RESOLVED,
+                            "Your complaint #" + complaint.getId() + " has been officially completed and closed. Thank you!",
+                            NotificationType.COMPLAINT_RESOLVED,
+                            NotificationPriority.HIGH,
+                            TargetType.COMPLAINT,
+                            complaint.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to citizen for closed complaint: {}", ex.getMessage(), ex);
+                }
+
+                // In-app notification to Inspector
+                try {
+                    notificationEventPublisher.publishToUser(
+                            inspector.getId(),
+                            changedBy != null ? changedBy.getId() : null,
+                            NotificationTitleConstant.WORK_ORDER_CLOSED_INSPECTOR,
+                            "Your work report for Work Order #" + workOrder.getId() + " was approved and the work order is now closed.",
+                            NotificationType.WORK_ORDER_COMPLETED,
+                            NotificationPriority.MEDIUM,
+                            TargetType.WORK_ORDER,
+                            workOrder.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to inspector for closed work order: {}", ex.getMessage(), ex);
+                }
 
                 log.info("Work Order {} changed to CLOSED and Complaint {} changed to Completed", workOrder.getId(), complaint.getId());
             }
+
 
 
             // =====================================================
@@ -643,10 +796,25 @@ public class WorkOrderServiceImpl implements WorkOrderService {
 
                 saveWorkOrderPhotos(requestDto.getPhotos(), workOrder);
 
+                // In-app notification to Inspector
+                try {
+                    String reason = requestDto.getRejectionReason() != null ? requestDto.getRejectionReason() : "Resolution not approved";
+                    notificationEventPublisher.publishToUser(
+                            inspector.getId(),
+                            changedBy != null ? changedBy.getId() : null,
+                            NotificationTitleConstant.WORK_ORDER_REASSIGNED_INSPECTOR,
+                            "Work Order #" + workOrder.getId() + " was rejected by admin. Reason: " + reason + ". Please re-inspect and resolve.",
+                            NotificationType.WORK_ORDER_STATUS_CHANGED,
+                            NotificationPriority.URGENT,
+                            TargetType.WORK_ORDER,
+                            workOrder.getId().toString()
+                    );
+                } catch (Exception ex) {
+                    log.error("Failed to send in-app notification to inspector for rejected work order: {}", ex.getMessage(), ex);
+                }
 
-
-            //    throw new RuntimeException("Work Order cannot be changed back to ASSIGNED");
             }
+
 
 
             // =====================================================

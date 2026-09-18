@@ -12,6 +12,11 @@ import com.schoolerp.usermanagement.modules.asset.responseDto.AssetCreateRespons
 import com.schoolerp.usermanagement.modules.asset.responseDto.ChildAssetResponseDto;
 import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEntity;
 import com.schoolerp.usermanagement.modules.assetCategory.repository.AssetCategoryRepository;
+import com.schoolerp.usermanagement.modules.notification.constant.NotificationTitleConstant;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationPriority;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationType;
+import com.schoolerp.usermanagement.modules.notification.enums.TargetType;
+import com.schoolerp.usermanagement.modules.notification.event.NotificationEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,6 +41,7 @@ public class AssetServiceImpl implements AssetService {
     private final GeometryService geometryConverter;
     private static final double DEFAULT_RADIUS_METERS = 1000.0;
     private final ParentAssetRepository parentAssetRepository;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Override
     public AssetCreateResponseDto createAsset(AssetrequestDto request) {
@@ -49,12 +55,29 @@ public class AssetServiceImpl implements AssetService {
 
             AssetEntity savedEntity = assetrepo.save(asset);
 
+            // In-app notification to Admins
+            try {
+                notificationEventPublisher.publishToAdmins(
+                        null,
+                        NotificationTitleConstant.ASSET_CREATED,
+                        "New asset '" + savedEntity.getName() + "' (Category: " + assetCategoryId.getName() + ") has been registered.",
+                        NotificationType.ASSET_CREATED,
+                        NotificationPriority.LOW,
+                        TargetType.ASSET,
+                        savedEntity.getId().toString()
+                );
+                log.info("In-app notification sent to admins for new asset: {}", savedEntity.getId());
+            } catch (Exception ex) {
+                log.error("Failed to send in-app notification for asset creation: {}", ex.getMessage(), ex);
+            }
+
             return AssetCreateResponseDto.builder().id(savedEntity.getId()).name(savedEntity.getName()).ward(savedEntity.getWard()).categoryId(assetCategoryId).build();
 
         } catch (Exception e) {
             throw e;
         }
     }
+
 
     @Override
     @Transactional(readOnly = true)

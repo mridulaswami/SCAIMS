@@ -13,6 +13,11 @@ import com.schoolerp.usermanagement.modules.asset.entity.ParentAssetEntity;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.assetCategory.entity.AssetCategoryEntity;
 import com.schoolerp.usermanagement.modules.assetCategory.repository.AssetCategoryRepository;
+import com.schoolerp.usermanagement.modules.notification.constant.NotificationTitleConstant;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationPriority;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationType;
+import com.schoolerp.usermanagement.modules.notification.enums.TargetType;
+import com.schoolerp.usermanagement.modules.notification.event.NotificationEventPublisher;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +27,6 @@ import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.stereotype.Service;
 
-import javax.naming.ldap.UnsolicitedNotification;
 import java.util.*;
 
 @Service
@@ -36,6 +40,7 @@ public class OsmImportServiceImpl implements OsmImportService{
     private final AssetCategoryRepository assetCategoryRepository;
     private final AssetImportRepository assetImportRepository;
     private final AssetRepository assetRepository;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     private final GeometryFactory gf = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -121,7 +126,24 @@ public class OsmImportServiceImpl implements OsmImportService{
 
         int linkedParents = assetImportRepository.backfillParentAssignments();
 
+        // Send in-app notification to all admins
+        try {
+            String message = String.format("Successfully imported %d assets across %d categories (Linked parents: %d).",
+                    assetentity.size(), categories.size(), linkedParents);
 
+            notificationEventPublisher.publishToAdmins(
+                    null,
+                    NotificationTitleConstant.ASSET_IMPORT_COMPLETED,
+                    message,
+                    NotificationType.ASSET_IMPORTED,
+                    NotificationPriority.MEDIUM,
+                    TargetType.ASSET,
+                    String.format("BBOX[%.4f,%.4f,%.4f,%.4f]", request.getSouth(), request.getWest(), request.getNorth(), request.getEast())
+            );
+            log.info("In-app notification sent to admins for OSM asset import: {}", message);
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification for asset import: {}", ex.getMessage(), ex);
+        }
     }
 
 

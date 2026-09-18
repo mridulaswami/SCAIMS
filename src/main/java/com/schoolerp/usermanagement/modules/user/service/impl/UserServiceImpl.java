@@ -219,6 +219,40 @@ public class UserServiceImpl implements UserService {
 
         emailService.sendEmail(emailRequest);
 
+        // =====================================================
+        // IN-APP NOTIFICATIONS FOR REGISTRATION
+        // =====================================================
+        // 1. In-app notification to all admins
+        try {
+            notificationEventPublisher.publishToAdmins(
+                    savedUser.getId(),
+                    NotificationTitleConstant.CITIZEN_REGISTERED,
+                    "A new Citizen has registered: " + savedUser.getName() + " (" + savedUser.getEmail() + ")",
+                    NotificationType.USER_REGISTERED,
+                    NotificationPriority.LOW,
+                    TargetType.USER,
+                    savedUser.getId().toString()
+            );
+            log.info("In-app notification sent to admins for new citizen: {}", savedUser.getId());
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification for citizen registration: {}", ex.getMessage(), ex);
+        }
+
+        // 2. Welcome notification to Citizen
+        try {
+            notificationEventPublisher.publishToUser(
+                    savedUser.getId(),
+                    null,
+                    NotificationTitleConstant.WELCOME_CITIZEN,
+                    "Welcome to SCAIMS, " + savedUser.getName() + "! Your citizen account has been successfully created.",
+                    NotificationType.USER_REGISTERED,
+                    NotificationPriority.LOW,
+                    TargetType.USER,
+                    savedUser.getId().toString()
+            );
+        } catch (Exception ex) {
+            log.error("Failed to send welcome in-app notification to citizen: {}", ex.getMessage(), ex);
+        }
 
         // =====================================================
         // 13. Response
@@ -269,6 +303,22 @@ public class UserServiceImpl implements UserService {
         user.setFirstTime(false);
 
         userRepository.save(user);
+
+        // In-app notification to user
+        try {
+            notificationEventPublisher.publishToUser(
+                    user.getId(),
+                    null,
+                    NotificationTitleConstant.PASSWORD_CHANGED,
+                    "Your account password was updated successfully. If this wasn't you, please contact administrator immediately.",
+                    NotificationType.PASSWORD_CHANGED,
+                    NotificationPriority.HIGH,
+                    TargetType.USER,
+                    user.getId().toString()
+            );
+        } catch (Exception ex) {
+            log.error("Failed to send in-app notification for password change: {}", ex.getMessage(), ex);
+        }
 
         log.info("Password changed and user activated successfully | username={}", request.getUserName());
     }
@@ -430,28 +480,15 @@ public class UserServiceImpl implements UserService {
         // IN-APP NOTIFICATION TO ALL ADMINS
         // =====================================================
         try {
-            List<UUID> adminUserIds = userRoleRepository.findByRoleId(1).stream()
-                    .map(ur -> ur.getUser().getId())
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-
-            if (!adminUserIds.isEmpty()) {
-                notificationEventPublisher.sendNotification(
-                        NotificationRequestDto.builder()
-                                .recipientIds(adminUserIds)
-                                .actorId(savedUser.getId())
-                                .title(NotificationTitleConstant.FIELD_ENGINEER_REGISTERED)
-                                .message("A new Field Engineer has been registered: " + savedUser.getName() + " (" + savedUser.getEmail() + ")")
-                                .type(NotificationType.USER_REGISTERED)
-                                .priority(NotificationPriority.MEDIUM)
-                                .targetType(TargetType.USER)
-                                .targetId(savedUser.getId().toString())
-                                .build()
-                );
-
-                log.info("In-app notification sent to {} admins for new field engineer: {}", adminUserIds.size(), savedUser.getId());
-            }
+            notificationEventPublisher.publishToAdmins(
+                    savedUser.getId(),
+                    NotificationTitleConstant.FIELD_ENGINEER_REGISTERED,
+                    "A new Field Engineer has been registered: " + savedUser.getName() + " (" + savedUser.getEmail() + ")",
+                    NotificationType.USER_REGISTERED,
+                    NotificationPriority.MEDIUM,
+                    TargetType.USER,
+                    savedUser.getId().toString()
+            );
         } catch (Exception ex) {
             log.error("Failed to send in-app notification for field engineer registration: {}", ex.getMessage(), ex);
         }
@@ -538,6 +575,22 @@ public class UserServiceImpl implements UserService {
             user.setPassword(encodedPassword);
 
             UserEntity savedUser = userRepository.save(user);
+
+            // In-app notification to user
+            try {
+                notificationEventPublisher.publishToUser(
+                        savedUser.getId(),
+                        null,
+                        NotificationTitleConstant.PASSWORD_CHANGED,
+                        "Your account password was updated successfully. If this wasn't you, please contact administrator immediately.",
+                        NotificationType.PASSWORD_CHANGED,
+                        NotificationPriority.HIGH,
+                        TargetType.USER,
+                        savedUser.getId().toString()
+                );
+            } catch (Exception notifEx) {
+                log.error("Failed to send in-app notification for password update: {}", notifEx.getMessage(), notifEx);
+            }
 
             log.info("User Password Updated successfully : {}", savedUser.getId());
 

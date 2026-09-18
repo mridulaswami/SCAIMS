@@ -25,6 +25,11 @@ import com.schoolerp.usermanagement.modules.email.requestDto.EmailRequestDto;
 import com.schoolerp.usermanagement.modules.email.service.EmailService;
 import com.schoolerp.usermanagement.modules.user.entity.UserEntity;
 import com.schoolerp.usermanagement.modules.user.repository.UserEntityRepository;
+import com.schoolerp.usermanagement.modules.notification.constant.NotificationTitleConstant;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationPriority;
+import com.schoolerp.usermanagement.modules.notification.enums.NotificationType;
+import com.schoolerp.usermanagement.modules.notification.enums.TargetType;
+import com.schoolerp.usermanagement.modules.notification.event.NotificationEventPublisher;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -61,6 +66,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final JwtTokenProvider jwtTokenProvider;
     private final ObjectMapper objectMapper;
     private final EmailService emailService;
+    private final NotificationEventPublisher notificationEventPublisher;
 
     @Override
     @Transactional
@@ -266,9 +272,47 @@ public class ComplaintServiceImpl implements ComplaintService {
             log.error("Failed to send admin complaint notification | complaintId={}", savedComplaint.getId(), e);
         }
 
-        // Step 10: Create response
+        // Step 10: Send In-App Notifications
+        // 10.1 In-app notification to Citizen
+        try {
+            notificationEventPublisher.publishToUser(
+                    citizen.getId(),
+                    null,
+                    NotificationTitleConstant.COMPLAINT_SUBMITTED_CITIZEN,
+                    "Your complaint #" + savedComplaint.getId() + " ('" + savedComplaint.getTitle() + "') has been received.",
+                    NotificationType.COMPLAINT_SUBMITTED,
+                    NotificationPriority.MEDIUM,
+                    TargetType.COMPLAINT,
+                    savedComplaint.getId().toString()
+            );
+            log.info("In-app notification sent to citizen for complaint: {}", savedComplaint.getId());
+        } catch (Exception e) {
+            log.error("Failed to send in-app notification to citizen | complaintId={}", savedComplaint.getId(), e);
+        }
+
+        // 10.2 In-app notification to all Admins
+        try {
+            String adminMsg = String.format("New complaint #%s filed: '%s' on asset '%s' by %s",
+                    savedComplaint.getId(), savedComplaint.getTitle(), asset.getName(), citizen.getName());
+
+            notificationEventPublisher.publishToAdmins(
+                    citizen.getId(),
+                    NotificationTitleConstant.COMPLAINT_SUBMITTED_ADMIN,
+                    adminMsg,
+                    NotificationType.COMPLAINT_SUBMITTED,
+                    NotificationPriority.HIGH,
+                    TargetType.COMPLAINT,
+                    savedComplaint.getId().toString()
+            );
+            log.info("In-app notification sent to admins for complaint: {}", savedComplaint.getId());
+        } catch (Exception e) {
+            log.error("Failed to send in-app notification to admins | complaintId={}", savedComplaint.getId(), e);
+        }
+
+        // Step 11: Create response
         return ComplaintResponseDto.builder().title(savedComplaint.getTitle()).description(savedComplaint.getDescription()).build();
     }
+
 
     private String saveComplaintPhoto(MultipartFile photo, UUID complaintId) throws IOException {
 
