@@ -26,7 +26,7 @@ public class CorsConfig {
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
 
         // Allowed HTTP methods
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
