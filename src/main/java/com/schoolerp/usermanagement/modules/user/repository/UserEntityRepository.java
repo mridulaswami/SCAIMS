@@ -42,6 +42,7 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
                     :search IS NULL
                     OR :search = ''
                     OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.name) LIKE LOWER(CONCAT('%', :search, '%'))
                     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
                     OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%'))
                 ) order by u.createdAt desc
@@ -57,6 +58,7 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
                     :search IS NULL
                     OR :search = ''
                     OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :search, '%'))
+                    OR LOWER(u.name) LIKE LOWER(CONCAT('%', :search, '%'))
                     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
                     OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%'))
                 )
