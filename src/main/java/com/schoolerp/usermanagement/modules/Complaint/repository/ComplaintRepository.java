@@ -67,6 +67,7 @@ public interface ComplaintRepository extends JpaRepository<ComplaintEntity, UUID
                 OR :search = ''
                 OR LOWER(u.pid) LIKE LOWER(CONCAT('%', :search, '%'))
                 OR LOWER(u.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                 OR LOWER(u.status) LIKE LOWER(CONCAT('%', :search, '%'))           
                 OR LOWER(u.description) LIKE LOWER(CONCAT('%', :search, '%'))
             )
         """,
@@ -79,6 +80,7 @@ public interface ComplaintRepository extends JpaRepository<ComplaintEntity, UUID
                 OR :search = ''
                 OR LOWER(u.pid) LIKE LOWER(CONCAT('%', :search, '%'))
                 OR LOWER(u.title) LIKE LOWER(CONCAT('%', :search, '%'))
+                OR LOWER(u.status) LIKE LOWER(CONCAT('%', :search, '%'))
                 OR LOWER(u.description) LIKE LOWER(CONCAT('%', :search, '%'))
             )
         """,
