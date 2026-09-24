@@ -2,6 +2,7 @@ package com.schoolerp.usermanagement.modules.asset.controller;
 
 
 import com.schoolerp.usermanagement.common.response.ApiResponse;
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import com.schoolerp.usermanagement.modules.asset.repository.AssetRepository;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
@@ -89,13 +90,13 @@ public class AssetController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<AssetResponseDto>>> getAssets(
-            @PageableDefault (size = 5)
-            Pageable pageable){
+    public ResponseEntity<PaginationResponse<List<AssetResponseDto>>> getAssets(
+            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) UUID categoryId, @RequestParam(required = false) String search){
 
-        Page<AssetResponseDto> assets = assetService.getAllAssets(pageable);
+        PaginationResponse<List<AssetResponseDto>> assets = assetService.getAssets(page,size,categoryId,search);
 
-        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully",assets));
+        return ResponseEntity.ok(assets);
     }
 
     @GetMapping("/assetCategoryId/{id}")
@@ -107,11 +108,11 @@ public class AssetController {
     }
 
     @GetMapping("/name/search")
-    public ResponseEntity<ApiResponse<List<AssetResponseDto>>> getAssetByName(@RequestParam String name){
+    public ResponseEntity<PaginationResponse<List<AssetResponseDto>>> getAssetByName(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestParam String name){
 
-        List<AssetResponseDto> assetList = assetService.getAssetsByName(name);
+        PaginationResponse<List<AssetResponseDto>> assetList = assetService.getAssetsByName(page, size, name);
 
-        return ResponseEntity.ok(ApiResponse.of(true,"Got assets successfully of given name",assetList));
+        return ResponseEntity.ok(assetList);
 
     }
 

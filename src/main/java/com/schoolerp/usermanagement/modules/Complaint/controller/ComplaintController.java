@@ -7,6 +7,7 @@ import com.schoolerp.usermanagement.modules.Complaint.responseDto.ComplaintRespo
 import com.schoolerp.usermanagement.modules.Complaint.responseDto.GetAllComplaintsResponseDto;
 import com.schoolerp.usermanagement.modules.Complaint.service.ComplaintService;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
+import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
 import com.schoolerp.usermanagement.security.JwtTokenProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletRequest;
@@ -51,7 +52,7 @@ public class ComplaintController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','CITIZEN')")
-    public ResponseEntity<PaginationResponse<List<GetAllComplaintsResponseDto>>> getAllComplaints(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size) {
+    public ResponseEntity<PaginationResponse<List<GetAllComplaintsResponseDto>>> getAllComplaints(@RequestHeader("Authorization") String authorizationHeader, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size , @RequestParam(required = false) String search) {
 
         log.info("Get all complaints API request received | page={} | size={}", page, size);
 
@@ -61,7 +62,7 @@ public class ComplaintController {
             token = authorizationHeader.substring(7);
         }
 
-        PaginationResponse<List<GetAllComplaintsResponseDto>> response = complaintService.getAllComplaints(token, page, size);
+        PaginationResponse<List<GetAllComplaintsResponseDto>> response = complaintService.getAllComplaints(token, page, size , search);
 
         log.info("Get all complaints API completed successfully | page={} | size={} | totalElements={}", page, size, response.getTotalElements());
 
@@ -89,4 +90,5 @@ public class ComplaintController {
 
         return refreshToken;
     }
+
 }

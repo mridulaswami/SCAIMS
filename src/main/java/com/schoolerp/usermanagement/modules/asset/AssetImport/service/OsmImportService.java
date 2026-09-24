@@ -5,5 +5,5 @@ import com.schoolerp.usermanagement.modules.asset.AssetImport.dto.OsmImportReque
 public interface OsmImportService {
 
 
-    public void importAssets(OsmImportRequestDto request);
+    public Integer importAssets(OsmImportRequestDto request);
 }

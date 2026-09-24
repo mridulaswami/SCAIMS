@@ -20,9 +20,10 @@ public class OsmImportController {
     private final OsmImportService osmImportService;
 
     @PostMapping("/osm")
-    public ResponseEntity<?> importAssets(@RequestBody OsmImportRequestDto request) {
-        osmImportService.importAssets(request);
-        return ResponseEntity.ok("Assets imported successfully");
+    public ResponseEntity<Integer> importAssets(@RequestBody OsmImportRequestDto request) {
+        Integer assetCount = osmImportService.importAssets(request);
+      //  return ResponseEntity.ok("Assets imported successfully" , assetCount);
+        return ResponseEntity.ok(assetCount);
     }
 
 

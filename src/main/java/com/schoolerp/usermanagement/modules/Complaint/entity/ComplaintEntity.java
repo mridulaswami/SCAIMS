@@ -67,6 +67,9 @@ public class ComplaintEntity {
     @Column(name = "updated_at", updatable = true)
     private LocalDateTime updatedAt;
 
+    @Column(name="pid", updatable = false)
+    private String pid;
+
     public enum Status {
         SUBMITTED, INPROGESS, REJECTED, COMPLETED
     }

@@ -40,5 +40,5 @@ server:
 app:
   jwt:
     secret: your-256-bit-secret-key-change-in-production-must-be-at-least-32-chars
-    access-token-expiration-ms: 900000
-    refresh-token-expiration-ms: 604800000
+    access-token-expiration-ms: 300000
+    refresh-token-expiration-ms: 3600000

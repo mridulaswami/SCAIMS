@@ -67,6 +67,7 @@ public class ComplaintServiceImpl implements ComplaintService {
     private final ObjectMapper objectMapper;
     private final EmailService emailService;
     private final NotificationEventPublisher notificationEventPublisher;
+    private static final Random random = new Random();
 
     @Override
     @Transactional
@@ -165,8 +166,10 @@ public class ComplaintServiceImpl implements ComplaintService {
             throw new IllegalArgumentException("Complaint location is required");
         }
 
+        String pid = generateComplaintId();
+
         // Step 4: Create complaint
-        ComplaintEntity complaint = ComplaintEntity.builder().citizenId(citizen).title(request.getTitle()).asset(asset).description(request.getDescription()).location(geometry).status(ComplaintEntity.Status.SUBMITTED).build();
+        ComplaintEntity complaint = ComplaintEntity.builder().pid(pid).citizenId(citizen).title(request.getTitle()).asset(asset).description(request.getDescription()).location(geometry).status(ComplaintEntity.Status.SUBMITTED).build();
 
         log.debug("Complaint entity prepared | citizenId={} | assetId={} | geometryType={} | status={}", citizenId, request.getAsset(), geometry.getGeometryType(), complaint.getStatus());
 
@@ -313,6 +316,11 @@ public class ComplaintServiceImpl implements ComplaintService {
         return ComplaintResponseDto.builder().title(savedComplaint.getTitle()).description(savedComplaint.getDescription()).build();
     }
 
+    public static String generateComplaintId() {
+        int number = random.nextInt(9000) + 1000; // 1000–9999
+        return "CP-" + number;
+    }
+
 
     private String saveComplaintPhoto(MultipartFile photo, UUID complaintId) throws IOException {
 
@@ -342,7 +350,7 @@ public class ComplaintServiceImpl implements ComplaintService {
 
     @Override
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public PaginationResponse<List<GetAllComplaintsResponseDto>> getAllComplaints(String token, int page, int size) {
+    public PaginationResponse<List<GetAllComplaintsResponseDto>> getAllComplaints(String token, int page, int size , String search) {
 
         log.info("Started getting all complaints | page={} | size={}", page, size);
 
@@ -368,7 +376,7 @@ public class ComplaintServiceImpl implements ComplaintService {
             throw new RuntimeException("User not found");
         }
 
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "created_at"));
 
         Page<ComplaintEntity> complaintPage;
 
@@ -378,13 +386,17 @@ public class ComplaintServiceImpl implements ComplaintService {
 
             log.debug("Admin user | Fetching all complaints");
 
-            complaintPage = complaintRepository.findAll(pageable);
+         //   complaintPage = complaintRepository.findAll(pageable);
+
+            complaintPage = complaintRepository.findComplaintsFilteredAdmin(search ,pageable);
 
         } else {
 
             log.debug("Citizen user | Fetching complaints | userId={}", userUuid);
+            UUID citizenId = userOptional.map(UserEntity::getId).orElse(null);
+            complaintPage = complaintRepository.findComplaintsFiltered(citizenId, search, pageable);
 
-            complaintPage = complaintRepository.findByCitizenId(userOptional.get(), pageable);
+       //     complaintPage = complaintRepository.findByCitizenId(userOptional.get(), pageable);
         }
 
         log.info("Complaints fetched successfully | page={} | size={} | totalElements={}", page, size, complaintPage.getTotalElements());
@@ -404,7 +416,7 @@ public class ComplaintServiceImpl implements ComplaintService {
                 workOrderDto = WorkOrderResponseDto.builder().id(workOrder.getId()).complaintId(workOrder.getComplaintId() != null ? workOrder.getComplaintId().getId() : null).inspectorId(workOrder.getInspectorId() != null ? workOrder.getInspectorId().getId() : null).priority(workOrder.getPriority() != null ? workOrder.getPriority().name() : null).status(workOrder.getStatus() != null ? workOrder.getStatus().name() : null).inspector(workOrder.getInspectorId()).workReport(workOrder.getWorkReport()).dueDate(workOrder.getDueDate()).createdAt(workOrder.getCreatedAt()).closedAt(workOrder.getClosedAt()).photos(workOrderPhotos).build();
             }
 
-            return GetAllComplaintsResponseDto.builder().id(complaint.getId()).citizenId(complaint.getCitizenId() != null ? complaint.getCitizenId().getId() : null).assetId(complaint.getAsset() != null ? complaint.getAsset().getId() : null).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus() != null ? complaint.getStatus().name() : null).location(complaint.getLocation() != null ? geometryConverter.fromJtsGeometry(complaint.getLocation()) : null).photos(complaintPhotos).workOrder(workOrderDto).createdAt(complaint.getCreatedAt()).updatedAt(complaint.getUpdatedAt()).build();
+            return GetAllComplaintsResponseDto.builder().id(complaint.getId()).pid(complaint.getPid()).citizenId(complaint.getCitizenId() != null ? complaint.getCitizenId().getId() : null).assetId(complaint.getAsset() != null ? complaint.getAsset().getId() : null).title(complaint.getTitle()).description(complaint.getDescription()).status(complaint.getStatus() != null ? complaint.getStatus().name() : null).location(complaint.getLocation() != null ? geometryConverter.fromJtsGeometry(complaint.getLocation()) : null).photos(complaintPhotos).workOrder(workOrderDto).createdAt(complaint.getCreatedAt()).updatedAt(complaint.getUpdatedAt()).build();
         }).toList();
 
         return new PaginationResponse<>(response, complaintPage.getTotalElements(), complaintPage.getNumber(), complaintPage.getSize());

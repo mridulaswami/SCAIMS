@@ -19,6 +19,8 @@ public class GetAllComplaintsResponseDto {
 
     private UUID id;
 
+    private String pid;
+
     private UUID citizenId;
 
     private UUID assetId;

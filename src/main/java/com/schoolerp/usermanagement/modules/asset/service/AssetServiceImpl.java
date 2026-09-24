@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.asset.service;
 
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryService;
 import com.schoolerp.usermanagement.modules.asset.entity.AssetEntity;
@@ -206,16 +207,21 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public Page<AssetResponseDto> getAllAssets(Pageable pageable) {
-        Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+    public PaginationResponse<List<AssetResponseDto>> getAssets(int page, int size, UUID assetCategoryId, String search) {
+     //   Pageable unsortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
 
-        Page<AssetEntity> assetList = assetrepo.findAll(unsortedPageable);
+        Pageable pageable = PageRequest.of(page, size);
 
-        return assetList.map(asset ->
+    //    Page<AssetEntity> assetList = assetrepo.findAll(unsortedPageable);
 
-             AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).categoryId(asset.getCategoryId().getId()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build());
+        Page<AssetEntity> assetList = assetrepo.findAssetsFiltered(assetCategoryId,search, pageable);
+
+        List<AssetResponseDto> response = assetList.getContent().stream().map(this::toAssetResponseDto).toList();
+
+        return new PaginationResponse<>(response, assetList.getTotalElements(), assetList.getNumber(), assetList.getSize());
 
     }
+
 
     @Override
     public Page<AssetResponseDto> getAssetsByCategory(UUID id , Pageable pageable) {
@@ -245,18 +251,35 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public List<AssetResponseDto> getAssetsByName(String name) {
+    public PaginationResponse<List<AssetResponseDto>> getAssetsByName(int page, int size, String name) {
 
-        List<AssetEntity> assetList = assetrepo.findAssetsByName(name);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<AssetEntity> assetList = assetrepo.findAssetsByName(name, pageable);
+        List<AssetResponseDto> content = assetList.getContent()
+                .stream()
+                .map(this::toAssetResponseDto)
+                .toList();
 
-        return assetList.stream().map(asset -> {
+        return new PaginationResponse<>
+                (content , assetList.getTotalElements(), assetList.getNumber(),assetList.getSize());
+    }
 
-            return AssetResponseDto.builder().id(asset.getId()).categoryName(asset.getCategoryId().getName()).categoryId(asset.getCategoryId().getId()).name(asset.getName()).installedDate(asset.getInstalledDate()).lastInspectedDate(asset.getLastInspectionDate()).build();
-        }).collect(Collectors.toList());    }
+    private AssetResponseDto toAssetResponseDto(AssetEntity asset) {
+        return AssetResponseDto.builder()
+                .id(asset.getId())
+                .categoryId(asset.getCategoryId().getId())
+                .categoryName(asset.getCategoryId().getName())
+                .name(asset.getName())
+                .installedDate(asset.getInstalledDate())
+                .lastInspectedDate(asset.getLastInspectionDate())
+                .build();
+    }
 
     private ChildAssetResponseDto mapToAssetResponse(AssetEntity asset) {
 
         return ChildAssetResponseDto.builder().id(asset.getId()).name(asset.getName()).categoryId(asset.getCategoryId() != null ? asset.getCategoryId().getId() : null).parentAssetId(asset.getParentAsset() != null ? asset.getParentAsset().getId() : null).geometry(asset.getGeometry() != null ? geometryConverter.fromJtsGeometry(asset.getGeometry()) : null).status(asset.getStatus()).condition(asset.getCondition()).ward(asset.getWard()).installedDate(asset.getInstalledDate()).lastInspectionDate(asset.getLastInspectionDate()).build();
     }
+
+
 
 }

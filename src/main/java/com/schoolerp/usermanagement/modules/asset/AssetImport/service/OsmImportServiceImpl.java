@@ -47,7 +47,7 @@ public class OsmImportServiceImpl implements OsmImportService{
 
     @Override
     @Transactional
-    public void importAssets(OsmImportRequestDto request) {
+    public Integer importAssets(OsmImportRequestDto request) {
 
         String query = queryBuilder.overpassQuery(request);
         log.info("Overpass Query: {}", query);
@@ -144,6 +144,11 @@ public class OsmImportServiceImpl implements OsmImportService{
         } catch (Exception ex) {
             log.error("Failed to send in-app notification for asset import: {}", ex.getMessage(), ex);
         }
+
+        long assetCount = assetImportRepository.count();
+
+        return (int) assetCount;
+
     }
 
 
