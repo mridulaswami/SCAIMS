@@ -54,14 +54,14 @@ public class AuthServiceImpl implements AuthService {
      * Access Token Expiration
      * Default = 15 minutes
      */
-    @Value("${app.jwt.expiration-ms:900000}")
+    @Value("${app.jwt.expiration-ms:300000}")
     private long accessTokenExpirationMs;
 
     /*
      * Refresh Token Expiration
      * Default = 7 days
      */
-    @Value("${app.jwt.refresh-token-expiration-ms:604800000}")
+    @Value("${app.jwt.refresh-token-expiration-ms:3600000}")
     private long refreshTokenExpirationMs;
 
     private static final String REFRESH_TOKEN_COOKIE = "refreshToken";

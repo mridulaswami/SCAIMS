@@ -35,7 +35,20 @@ Select * from assets where category_id = :categoryId
         SELECT * FROM assets a
         WHERE LOWER(a.name) LIKE LOWER(CONCAT('%', :name, '%'))
 """ , nativeQuery = true)
-List<AssetEntity> findAssetsByName(@Param("name") String name);
+Page<AssetEntity> findAssetsByName(@Param("name") String name , Pageable pageable);
+
+
+    @Query("""
+    SELECT a FROM AssetEntity a
+    JOIN a.categoryId c
+    WHERE (:assetCategoryId IS NULL OR CAST(c.id AS string) = CAST(:assetCategoryId AS string))
+      AND (:search IS NULL OR LOWER(a.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%')))
+    """)
+    Page<AssetEntity> findAssetsFiltered(
+            @Param("assetCategoryId") UUID assetCategoryId,
+            @Param("search") String search,
+            Pageable pageable
+    );
 
 
 

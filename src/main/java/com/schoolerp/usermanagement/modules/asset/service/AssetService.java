@@ -1,5 +1,6 @@
 package com.schoolerp.usermanagement.modules.asset.service;
 
+import com.schoolerp.usermanagement.common.response.PaginationResponse;
 import com.schoolerp.usermanagement.modules.Geometry.GeometryDto;
 import com.schoolerp.usermanagement.modules.asset.responseDto.AssetResponseDto;
 import com.schoolerp.usermanagement.modules.asset.requestDto.AssetrequestDto;
@@ -20,12 +21,15 @@ public interface AssetService {
 
     List<ChildAssetResponseDto> getChildAssets(UUID parentAssetId);
 
-    Page<AssetResponseDto> getAllAssets(Pageable pageable);
+   // Page<AssetResponseDto> getAllAssets(Pageable pageable);
+
+    PaginationResponse<List<AssetResponseDto>> getAssets(int page, int size, UUID id, String search);
+
 
     Page<AssetResponseDto> getAssetsByCategory(UUID id , Pageable pageable);
 
      AssetResponseDto getAssetsbyid(UUID id);
 
-     List<AssetResponseDto> getAssetsByName(String name);
+     PaginationResponse<List<AssetResponseDto>> getAssetsByName(int page, int size, String name);
 
 }

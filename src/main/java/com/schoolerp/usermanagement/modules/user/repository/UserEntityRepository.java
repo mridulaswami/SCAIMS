@@ -44,7 +44,7 @@ public interface UserEntityRepository extends JpaRepository<UserEntity, UUID> {
                     OR LOWER(u.userName) LIKE LOWER(CONCAT('%', :search, '%'))
                     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :search, '%'))
                     OR LOWER(u.phone) LIKE LOWER(CONCAT('%', :search, '%'))
-                )
+                ) order by u.createdAt desc
             """, countQuery = """
             SELECT COUNT(DISTINCT u.id)
             FROM UserEntity u
