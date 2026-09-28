@@ -70,7 +70,7 @@ public class UserServiceImpl implements UserService {
 
         // Existing user check
         if (userRepository.existsByEmail(requestDto.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new EmailExistsException("Email already exists");
         }
 
         // Generate OTP
@@ -106,6 +106,10 @@ public class UserServiceImpl implements UserService {
         emailService.sendEmail(emailRequest);
 
         log.info("Registration OTP sent | email={}", requestDto.getEmail());
+    }
+
+    public class EmailExistsException extends RuntimeException {
+        public EmailExistsException(String msg) { super(msg); }
     }
 
 
@@ -482,15 +486,15 @@ public class UserServiceImpl implements UserService {
         try {
             notificationEventPublisher.publishToAdmins(
                     savedUser.getId(),
-                    NotificationTitleConstant.FIELD_ENGINEER_REGISTERED,
-                    "A new Field Engineer has been registered: " + savedUser.getName() + " (" + savedUser.getEmail() + ")",
+                    NotificationTitleConstant.USER_REGISTERED,
+                    "A new User has been registered: " + savedUser.getName() + " (" + savedUser.getEmail() + ")",
                     NotificationType.USER_REGISTERED,
                     NotificationPriority.MEDIUM,
                     TargetType.USER,
                     savedUser.getId().toString()
             );
         } catch (Exception ex) {
-            log.error("Failed to send in-app notification for field engineer registration: {}", ex.getMessage(), ex);
+            log.error("Failed to send in-app notification for User registration: {}", ex.getMessage(), ex);
         }
 
 
@@ -628,6 +632,7 @@ public class UserServiceImpl implements UserService {
             user.setName(updateRequest.getName());
             user.setEmail(updateRequest.getEmail());
             user.setStatus(updateRequest.getStatus());
+            user.setPhone(updateRequest.getPhoneNumber());
 
             UserEntity updatedUser = userRepository.save(user);
 

@@ -109,6 +109,7 @@ public class OsmImportServiceImpl implements OsmImportService{
             String name = resolveName(elements, category);
             assetentity.add(saveAsset(elements, category, shape, name));
         }
+        long assetCount = assetentity.size();
 
         for(AssetEntity asset : assetentity){
             assetRepository.upsertAsset(
@@ -145,7 +146,7 @@ public class OsmImportServiceImpl implements OsmImportService{
             log.error("Failed to send in-app notification for asset import: {}", ex.getMessage(), ex);
         }
 
-        long assetCount = assetImportRepository.count();
+      //  long assetCount = assetImportRepository.count();
 
         return (int) assetCount;
 

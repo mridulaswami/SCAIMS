@@ -43,11 +43,18 @@ public class ComplaintController {
         String accestoken = extractRefreshToken(req);
         UUID userId = UUID.fromString(jwtTokenProvider.getUserIdFromJWT(accestoken));
 
-        ComplaintResponseDto response = complaintService.createComplaint(request, userId);
+        try {
+            ComplaintResponseDto response = complaintService.createComplaint(request, userId);
 
-        log.info("Create complaint API completed successfully | citizenId={} | title={}", userId, request.getTitle());
+            log.info("Create complaint API completed successfully | citizenId={} | title={}", userId, request.getTitle());
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(true, "Complaint Created Successfully", response));
+            return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(true, "Complaint Created Successfully", response));
+        } catch (Exception ex) {
+
+            log.info("Unable to create Complaint for user | citizenId={} ", userId);
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.of(false, "Failed to create Complaint: " + ex.getMessage(), null));
+        }
     }
 
     @GetMapping

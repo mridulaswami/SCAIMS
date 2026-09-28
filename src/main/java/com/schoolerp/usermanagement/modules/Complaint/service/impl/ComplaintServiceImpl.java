@@ -84,6 +84,11 @@ public class ComplaintServiceImpl implements ComplaintService {
             return new RuntimeException("Citizen not found with id: " + citizenId);
         });
 
+        if(!citizen.isStatus()){
+
+            throw new RuntimeException("User is Inactive");
+        }
+
         // Step 2: Find asset
         log.debug("Fetching asset | assetId={}", request.getAsset());
 
