@@ -11,6 +11,7 @@ import com.schoolerp.usermanagement.modules.user.requestDto.CreateUserRequestDto
 import com.schoolerp.usermanagement.modules.user.requestDto.SendOptRequestDto;
 import com.schoolerp.usermanagement.modules.user.responseDto.CreateUserResponseDto;
 import com.schoolerp.usermanagement.modules.user.service.UserService;
+import com.schoolerp.usermanagement.modules.user.service.impl.UserServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +46,12 @@ public class UserController {
 
             return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.of(true, "OTP sent successfully. Please verify your email.", null));
 
-        } catch (Exception ex) {
+        } catch (UserServiceImpl.EmailExistsException ex) {
+
+            log.error("Register API failed | email={} | error={}", requestDto.getEmail(), ex.getMessage(), ex);
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.of(false, "Failed to register user: " + ex.getMessage(), null));
+        } catch (RuntimeException ex) {
 
             log.error("Register API failed | email={} | error={}", requestDto.getEmail(), ex.getMessage(), ex);
 

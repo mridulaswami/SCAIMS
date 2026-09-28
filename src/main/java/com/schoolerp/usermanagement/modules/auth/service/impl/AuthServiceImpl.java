@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -109,7 +110,7 @@ public class AuthServiceImpl implements AuthService {
 
                 log.warn("Login rejected - user inactive | userId={} | username={}", user.getId(), user.getUserName());
 
-                throw new RuntimeException("User account is inactive");
+                throw new UserInactiveException("User account is inactive");
             }
 
 
@@ -119,7 +120,7 @@ public class AuthServiceImpl implements AuthService {
             List<UserRoleEntity> userRoles = userRoleRepository.findByUserId(user.getId());
 
             if (userRoles == null || userRoles.isEmpty()) {
-                throw new RuntimeException("Role not assigned to user");
+                throw new RoleNotAssignedException("Role not assigned to user");
             }
 
             List<String> roles = userRoles.stream().map(UserRoleEntity::getRole).filter(Objects::nonNull).map(RoleEntity::getRoleName).toList();
@@ -213,12 +214,27 @@ public class AuthServiceImpl implements AuthService {
 //
 //            throw ex;
 
-        } catch (RuntimeException ex) {
+        } catch (UserInactiveException | RoleNotAssignedException ex) {
+
+            log.warn("Login rejected | username={} | reason={}", requestDto.getUserName(), ex.getMessage());
+            throw ex;
+        } catch (DisabledException ex) {
+            log.warn("Login rejected - user inactive | username={}", requestDto.getUserName());
+            throw new UserInactiveException("User account is inactive");
+
+        }catch (RuntimeException ex) {
 
             log.warn("Login failed | username={} | error={}", requestDto.getUserName(), ex.getMessage(), ex);
 
             throw new RuntimeException("Invalid Username or Password");
         }
+    }
+
+    public class UserInactiveException extends RuntimeException {
+        public UserInactiveException(String msg) { super(msg); }
+    }
+    public class RoleNotAssignedException extends RuntimeException {
+        public RoleNotAssignedException(String msg) { super(msg); }
     }
 
 

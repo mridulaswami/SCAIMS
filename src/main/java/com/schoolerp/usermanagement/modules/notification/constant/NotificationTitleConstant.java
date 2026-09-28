@@ -8,6 +8,7 @@ public final class NotificationTitleConstant {
 
     public static final String FIELD_ENGINEER_REGISTERED = "New Field Engineer Registered";
     public static final String CITIZEN_REGISTERED = "New Citizen Registered";
+    public static final String USER_REGISTERED = "New User Registered";
     public static final String WELCOME_CITIZEN = "Welcome to SCAIMS";
     public static final String PASSWORD_CHANGED = "Password Changed Successfully";
     public static final String ASSET_IMPORT_COMPLETED = "Asset Import Completed";
