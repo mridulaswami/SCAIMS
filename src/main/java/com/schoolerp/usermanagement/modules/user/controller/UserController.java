@@ -72,7 +72,13 @@ public class UserController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.of(true, "Field Engineer created successfully", response));
 
-        } catch (Exception ex) {
+        }
+        catch (UserServiceImpl.EmailExistsException ex) {
+
+            log.error("Register API failed | email={} | error={}", requestDto.getEmail(), ex.getMessage(), ex);
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(ApiResponse.of(false, "Failed to register user: " + ex.getMessage(), null));
+        }catch (Exception ex) {
 
             log.error("Create Field Engineer API request failed | username={} | email={} | roleId={} | error={}", requestDto.getUserName(), requestDto.getEmail(), requestDto.getRoleId(), ex.getMessage(), ex);
 

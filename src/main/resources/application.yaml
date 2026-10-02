@@ -1,6 +1,8 @@
 spring:
   application:
     name: USER-MANAGEMENT-SERVICE
+  profiles:
+    active: local
 
   flyway:
     enabled: true

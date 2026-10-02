@@ -1,0 +1,1 @@
+alter table inspection add column due_date TIMESTAMP ;

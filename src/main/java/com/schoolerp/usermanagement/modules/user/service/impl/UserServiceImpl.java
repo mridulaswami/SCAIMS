@@ -376,7 +376,7 @@ public class UserServiceImpl implements UserService {
         // Email
         if (userRepository.existsByEmail(request.getEmail())) {
 
-            throw new RuntimeException("Email already exists");
+            throw new EmailExistsException("Email already exists");
         }
 
         // Phone
